@@ -9,6 +9,7 @@ from database import get_db, engine, Base
 from models import Job, Puzzle
 from schemas import JobCreate, JobResponse, PuzzleResponse, PuzzleListResponse
 from config import settings
+from job_queue import queue
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -73,7 +74,22 @@ def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_job)
 
-    # TODO: In Phase 2, add job to Redis queue for processing
+    # Push job to Redis queue for worker processing
+    queue_data = {
+        "job_id": str(new_job.id),
+        "username": new_job.username,
+        "date_from": new_job.date_from.isoformat() if new_job.date_from else None,
+        "date_to": new_job.date_to.isoformat() if new_job.date_to else None,
+        "min_rating": new_job.min_rating,
+        "max_rating": new_job.max_rating,
+        "time_control": new_job.time_control,
+    }
+
+    queue_success = queue.push(str(new_job.id), queue_data)
+
+    if not queue_success:
+        # Log error but don't fail the request (job is already in database)
+        print(f"Warning: Failed to push job {new_job.id} to queue")
 
     return new_job
 
