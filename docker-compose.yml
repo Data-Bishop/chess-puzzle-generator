@@ -62,18 +62,18 @@ services:
     networks:
       - backend_network
 
-  # Game Extraction Worker
+  # Game Extraction Worker (with Stockfish)
   worker:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.worker
     container_name: worker
-    command: python3 -u worker.py
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-databishop}:${POSTGRES_PASSWORD:-databishop}@postgres:5432/${POSTGRES_DB:-chess_puzzles}
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: ${ENVIRONMENT:-development}
       PYTHONUNBUFFERED: 1
+      STOCKFISH_PATH: /usr/games/stockfish
     volumes:
       - ./backend/app:/app
     depends_on:
