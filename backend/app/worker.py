@@ -3,22 +3,28 @@ import os
 import sys
 import time
 import signal
-from datetime import datetime
-from typing import Optional, Dict, Any
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any, List
 
 from job_queue import queue
 from chesscom_client import ChessComClient
+from puzzle_generator import PuzzleGenerator, Puzzle as PuzzleData
 from database import SessionLocal
-from models import Job
+from models import Job, Puzzle
 
 
 class GameExtractionWorker:
-    """Worker that fetches games from Chess.com."""
+    """Worker that fetches games from Chess.com and generates puzzles."""
+
+    # Configuration
+    MAX_PUZZLES_PER_GAME = 2
+    MAX_TOTAL_PUZZLES = 20
 
     def __init__(self):
         """Initialize worker."""
         self.running = True
         self.chess_client = ChessComClient()
+        self.puzzle_generator = PuzzleGenerator()
 
         # Handle graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -111,16 +117,37 @@ class GameExtractionWorker:
                 )
                 return
 
-            # For Phase 2, we'll just count games and update status
-            # Phase 3 will add actual puzzle generation
+            # Update status to show we're generating puzzles
             self._update_job_status(
                 job_id,
-                "games_extracted",
+                "generating_puzzles",
                 total_games=len(games)
             )
 
+            # Generate puzzles from games
+            print(f"Generating puzzles from {len(games)} games...")
+            puzzles = self.puzzle_generator.generate_puzzles_from_games(
+                games,
+                max_puzzles_per_game=self.MAX_PUZZLES_PER_GAME,
+                max_total_puzzles=self.MAX_TOTAL_PUZZLES
+            )
+
+            print(f"Generated {len(puzzles)} puzzles")
+
+            # Store puzzles in database
+            if puzzles:
+                self._store_puzzles(job_id, puzzles)
+
+            # Mark job as completed
+            self._update_job_status(
+                job_id,
+                "completed",
+                total_games=len(games),
+                total_puzzles=len(puzzles)
+            )
+
             print(f"Job {job_id} completed successfully")
-            print(f"Total games extracted: {len(games)}")
+            print(f"Total games: {len(games)}, Total puzzles: {len(puzzles)}")
 
         except ValueError as e:
             # User not found or invalid input
@@ -139,6 +166,7 @@ class GameExtractionWorker:
         job_id: str,
         status: str,
         total_games: int = 0,
+        total_puzzles: int = 0,
         error: Optional[str] = None
     ):
         """
@@ -148,6 +176,7 @@ class GameExtractionWorker:
             job_id: Job UUID
             status: New status
             total_games: Number of games fetched
+            total_puzzles: Number of puzzles generated
             error: Error message if failed
         """
         db = SessionLocal()
@@ -160,11 +189,12 @@ class GameExtractionWorker:
 
             job.status = status
             job.total_games = total_games
+            job.total_puzzles = total_puzzles
 
             if error:
                 job.error_message = error
 
-            if status in ["completed", "failed", "games_extracted"]:
+            if status in ["completed", "failed"]:
                 job.completed_at = datetime.utcnow()
 
             db.commit()
@@ -172,6 +202,39 @@ class GameExtractionWorker:
 
         except Exception as e:
             print(f"Error updating job status: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
+    def _store_puzzles(self, job_id: str, puzzles: List[PuzzleData]):
+        """
+        Store generated puzzles in database.
+
+        Args:
+            job_id: Job UUID
+            puzzles: List of Puzzle dataclass objects from puzzle_generator
+        """
+        db = SessionLocal()
+        try:
+            expires_at = datetime.utcnow() + timedelta(hours=24)
+
+            for puzzle_data in puzzles:
+                puzzle = Puzzle(
+                    job_id=job_id,
+                    fen=puzzle_data.fen,
+                    solution=puzzle_data.solution,
+                    theme=puzzle_data.theme,
+                    rating=puzzle_data.rating,
+                    game_url=puzzle_data.game_url,
+                    expires_at=expires_at
+                )
+                db.add(puzzle)
+
+            db.commit()
+            print(f"Stored {len(puzzles)} puzzles in database")
+
+        except Exception as e:
+            print(f"Error storing puzzles: {e}")
             db.rollback()
         finally:
             db.close()
@@ -189,6 +252,7 @@ class GameExtractionWorker:
         """Cleanup resources."""
         print("Cleaning up worker resources...")
         self.chess_client.close()
+        self.puzzle_generator.close()
         print("Worker stopped")
 
 
