@@ -14,8 +14,11 @@ alembic==1.13.1
 redis==5.0.1
 aioredis==2.0.1
 
-# HTTP Client (for Chess.com API later)
+# HTTP Client
 httpx==0.26.0
+
+# Chess
+python-chess==1.999
 
 # CORS
 python-multipart==0.0.6
