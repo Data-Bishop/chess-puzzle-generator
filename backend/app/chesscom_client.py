@@ -14,6 +14,7 @@ class ChessComClient:
         """Initialize HTTP client."""
         self.client = httpx.Client(
             timeout=30.0,
+            follow_redirects=True,
             headers={
                 "User-Agent": "Chess Puzzle Generator (Educational Project)"
             }

@@ -52,6 +52,8 @@ class RedisQueue:
         Returns:
             Tuple of (job_id, job_data) or None if timeout
         """
+        import time as time_module
+
         try:
             # BLPOP returns (queue_name, job_id) or None
             result = self.redis_client.blpop(self.queue_name, timeout=timeout)
@@ -61,10 +63,17 @@ class RedisQueue:
 
             _, job_id = result
 
-            # Retrieve job data
-            job_data_json = self.redis_client.get(f"job:{job_id}")
+            # Retrieve job data with retry (handles race condition)
+            job_data_json = None
+            for attempt in range(3):
+                job_data_json = self.redis_client.get(f"job:{job_id}")
+                if job_data_json:
+                    break
+                print(f"Retry {attempt + 1}: Job data not found for job {job_id}, waiting...")
+                time_module.sleep(0.5)
+
             if not job_data_json:
-                print(f"Warning: Job data not found for job {job_id}")
+                print(f"Warning: Job data not found for job {job_id} after retries")
                 return None
 
             job_data = json.loads(job_data_json)
