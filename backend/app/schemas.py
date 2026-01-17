@@ -1,0 +1,54 @@
+"""Pydantic schemas for request/response validation."""
+from datetime import datetime
+from typing import Optional, List
+from pydantic import BaseModel, Field
+from uuid import UUID
+
+
+# Job Schemas
+class JobCreate(BaseModel):
+    """Schema for creating a new job."""
+    username: str = Field(..., min_length=1, max_length=255, description="Chess.com username")
+    date_from: Optional[datetime] = Field(None, description="Filter games from this date")
+    date_to: Optional[datetime] = Field(None, description="Filter games to this date")
+    min_rating: Optional[int] = Field(None, ge=0, le=3500, description="Minimum rating filter")
+    max_rating: Optional[int] = Field(None, ge=0, le=3500, description="Maximum rating filter")
+    time_control: Optional[str] = Field(None, max_length=50, description="Time control filter (e.g., 'blitz', 'rapid')")
+
+
+class JobResponse(BaseModel):
+    """Schema for job response."""
+    id: UUID
+    username: str
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    completed_at: Optional[datetime]
+    error_message: Optional[str]
+    total_games: int
+    total_puzzles: int
+
+    class Config:
+        from_attributes = True
+
+
+# Puzzle Schemas
+class PuzzleResponse(BaseModel):
+    """Schema for puzzle response."""
+    id: UUID
+    job_id: UUID
+    fen: str
+    solution: List[str]  # Array of UCI moves
+    theme: Optional[str]
+    rating: Optional[int]
+    game_url: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PuzzleListResponse(BaseModel):
+    """Schema for list of puzzles."""
+    puzzles: List[PuzzleResponse]
+    total: int
