@@ -1,0 +1,23 @@
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Database
+asyncpg==0.29.0
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Redis
+redis==5.0.1
+aioredis==2.0.1
+
+# HTTP Client (for Chess.com API later)
+httpx==0.26.0
+
+# CORS
+python-multipart==0.0.6
+
+# Utilities
+python-dotenv==1.0.0
