@@ -62,6 +62,29 @@ services:
     networks:
       - backend_network
 
+  # Game Extraction Worker
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: worker
+    command: python3 -u worker.py
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-databishop}:${POSTGRES_PASSWORD:-databishop}@postgres:5432/${POSTGRES_DB:-chess_puzzles}
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./backend/app:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend_network
+    restart: unless-stopped
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
