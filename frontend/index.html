@@ -41,12 +41,26 @@
             background-color: var(--board-dark) !important;
         }
 
-        /* Move highlighting */
-        .highlight-white {
+        /* Move highlighting - override chessboard.js default box-shadow with full background */
+        .highlight1-32417 {
+            box-shadow: none !important;
             background-color: var(--board-highlight-light) !important;
         }
 
-        .highlight-black {
+        .highlight2-9c5d2 {
+            box-shadow: none !important;
+            background-color: var(--board-highlight-dark) !important;
+        }
+
+        /* For squares that have both white class and highlight */
+        .white-1e1d7.highlight1-32417,
+        .white-1e1d7.highlight2-9c5d2 {
+            background-color: var(--board-highlight-light) !important;
+        }
+
+        /* For squares that have both black class and highlight */
+        .black-3c85d.highlight1-32417,
+        .black-3c85d.highlight2-9c5d2 {
             background-color: var(--board-highlight-dark) !important;
         }
 
