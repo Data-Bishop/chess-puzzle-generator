@@ -4,149 +4,234 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chess Puzzle Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <style>
+        :root {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --border-color: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --accent-blue: #2563eb;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            font-size: 16px;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 20px;
+            line-height: 1.5;
+        }
+
+        /* Fluid Typography */
+        .heading-xl {
+            font-size: clamp(3rem, 5vw, 5rem);
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .heading-lg {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .heading-md {
+            font-size: clamp(1.25rem, 2vw, 1.5rem);
+            font-weight: 500;
+            letter-spacing: 0;
+            line-height: 1.3;
+        }
+
+        .subheading {
+            font-size: clamp(1.125rem, 1.5vw, 1.375rem);
+            font-weight: 500;
+            letter-spacing: 0;
+            color: var(--text-secondary);
+        }
+
+        .body-text {
+            font-size: clamp(1rem, 1.2vw, 1.25rem);
+            font-weight: 400;
+            line-height: 1.5;
+            color: var(--text-secondary);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            padding: 2rem;
         }
 
+        /* Header */
         .header {
             text-align: center;
-            color: white;
-            margin-bottom: 30px;
+            padding: 4rem 0 3rem;
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--accent-green) 0%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
+        /* Cards */
         .card {
-            background: white;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
         }
 
         .card h2 {
-            margin-bottom: 15px;
-            color: #333;
+            margin-bottom: 1.5rem;
         }
 
+        /* Form Elements */
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.25rem;
         }
 
         label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #333;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e8ed;
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            transition: border-color 0.2s, outline 0.2s;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
         }
 
         input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
+            outline: 2px solid var(--accent-green);
+            outline-offset: 2px;
+            border-color: var(--accent-green);
         }
 
+        /* Buttons */
         .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 12px 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        .btn:focus {
+            outline: 2px solid var(--accent-green);
+            outline-offset: 2px;
         }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .btn-primary {
+            background: var(--accent-green);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-green-hover);
         }
 
         .btn-secondary {
-            background: #6c757d;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
-        .btn-success {
-            background: #28a745;
+        .btn-secondary:hover {
+            background: #4b5563;
         }
 
         .btn-warning {
-            background: #ffc107;
-            color: #333;
+            background: var(--accent-yellow);
+            color: #1f2937;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
         }
 
         .btn-sm {
-            padding: 8px 16px;
-            font-size: 14px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        /* Status Messages */
         .status {
-            padding: 15px;
+            padding: 1rem 1.25rem;
             border-radius: 8px;
-            margin-top: 15px;
+            margin-top: 1.25rem;
+            border: 1px solid;
         }
 
         .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--accent-green);
+            color: #34d399;
         }
 
         .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--accent-red);
+            color: #f87171;
         }
 
         .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-
-        .status.warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeeba;
+            background: rgba(37, 99, 235, 0.1);
+            border-color: var(--accent-blue);
+            color: #60a5fa;
         }
 
         .hidden {
@@ -154,353 +239,562 @@
         }
 
         .job-info {
-            background: #f8f9fa;
-            padding: 12px;
+            background: var(--bg-primary);
+            padding: 1rem;
             border-radius: 8px;
-            margin-top: 10px;
-            font-size: 14px;
+            margin-top: 0.75rem;
+            font-size: 0.9375rem;
+            border: 1px solid var(--border-color);
         }
 
         .job-info strong {
-            color: #667eea;
+            color: var(--accent-green);
         }
 
+        /* Loading Spinner */
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,.3);
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        .grid {
+        /* Landing Page Grid */
+        .landing-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
-        @media (max-width: 900px) {
-            .grid {
+        @media (max-width: 768px) {
+            .landing-grid {
                 grid-template-columns: 1fr;
             }
         }
 
-        /* Puzzle Solver Styles */
-        .puzzle-container {
+        /* ==================== PUZZLE SOLVER LAYOUT ==================== */
+        .puzzle-solver-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            grid-template-columns: 1fr 280px;
+            gap: 1.5rem;
             align-items: start;
         }
 
-        @media (max-width: 900px) {
-            .puzzle-container {
+        @media (max-width: 1024px) {
+            .puzzle-solver-layout {
                 grid-template-columns: 1fr;
             }
         }
 
-        .board-section {
+        /* Main Area */
+        .puzzle-main {
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        #board {
-            width: 100%;
-            max-width: 450px;
-        }
-
-        .turn-indicator {
-            margin-top: 15px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .turn-indicator.white {
-            background: #f0f0f0;
-            color: #333;
-            border: 2px solid #333;
-        }
-
-        .turn-indicator.black {
-            background: #333;
-            color: #fff;
-        }
-
-        .puzzle-info {
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .puzzle-meta {
+        /* Sidebar - Puzzle List */
+        .puzzle-sidebar {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-height: calc(100vh - 200px);
             display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
+            flex-direction: column;
         }
 
-        .meta-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 13px;
+        .puzzle-sidebar h3 {
+            font-size: 1rem;
             font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
         }
 
-        .meta-badge.theme {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .meta-badge.rating {
-            background: #fff3e0;
-            color: #e65100;
-        }
-
-        .feedback {
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .feedback.correct {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .feedback.incorrect {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .feedback.complete {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .move-history {
-            margin: 15px 0;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
-            min-height: 40px;
-        }
-
-        .move-history span {
-            display: inline-block;
-            padding: 3px 8px;
-            margin: 2px;
-            background: #e9ecef;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-        }
-
-        .move-history span.correct {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .move-history span.incorrect {
-            background: #f8d7da;
-            color: #721c24;
-            text-decoration: line-through;
-        }
-
-        .puzzle-controls {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 15px;
-        }
-
+        /* Puzzle Navigation */
         .puzzle-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 10px;
-            background: #f8f9fa;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
         }
 
         .puzzle-counter {
             font-weight: 600;
-            color: #667eea;
+            font-size: 1rem;
+            color: var(--accent-green);
         }
 
-        .puzzle-list-compact {
-            max-height: 300px;
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 1rem;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.375rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s ease;
+        }
+
+        /* Board Container */
+        .board-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+        }
+
+        #board {
+            width: 100%;
+        }
+
+        .turn-indicator {
+            margin-top: 1rem;
+            padding: 0.625rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .turn-indicator.white {
+            background: var(--text-primary);
+            color: var(--bg-primary);
+        }
+
+        .turn-indicator.black {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Puzzle Info Panel */
+        .puzzle-info-panel {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Puzzle Meta Badges */
+        .puzzle-meta {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        .meta-badge.theme {
+            background: rgba(37, 99, 235, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+        }
+
+        .meta-badge.rating {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .game-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .game-link:hover {
+            color: var(--accent-green);
+        }
+
+        .game-link:focus {
+            outline: 2px solid var(--accent-green);
+            outline-offset: 2px;
+        }
+
+        /* Feedback */
+        .feedback {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: center;
+            border: 1px solid;
+            width: 100%;
+        }
+
+        .feedback.correct {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--accent-green);
+            color: #34d399;
+        }
+
+        .feedback.incorrect {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: var(--accent-red);
+            color: #f87171;
+        }
+
+        .feedback.complete {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent-green);
+            color: #34d399;
+        }
+
+        .feedback.warning {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: var(--accent-yellow);
+            color: #fbbf24;
+        }
+
+        /* Move History */
+        .move-history-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .move-history-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        .move-history {
+            flex: 1;
+            min-height: 2.5rem;
+            max-height: 4rem;
             overflow-y: auto;
-            margin-top: 15px;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            align-items: center;
+        }
+
+        .move-history span {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.875rem;
+        }
+
+        .move-history span.correct {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .move-history span.incorrect {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            text-decoration: line-through;
+        }
+
+        /* Puzzle Controls */
+        .puzzle-controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .puzzle-controls .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+        }
+
+        /* ==================== PUZZLE LIST (Sidebar) ==================== */
+        .puzzle-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .puzzle-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .puzzle-list::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 3px;
+        }
+
+        .puzzle-list::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
         }
 
         .puzzle-list-item {
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background-color 0.15s, border-color 0.15s;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .puzzle-list-item:hover {
-            background: #e9ecef;
+            background: var(--bg-tertiary);
+        }
+
+        .puzzle-list-item:focus {
+            outline: 2px solid var(--accent-green);
+            outline-offset: -2px;
         }
 
         .puzzle-list-item.active {
-            background: #667eea;
-            color: white;
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: #fff;
         }
 
         .puzzle-list-item.solved {
-            border-left: 4px solid #28a745;
+            border-left: 3px solid var(--accent-green);
         }
 
-        .game-link {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 13px;
+        .puzzle-list-item .puzzle-number {
+            font-weight: 600;
+            font-size: 0.9375rem;
         }
 
-        .game-link:hover {
-            text-decoration: underline;
+        .puzzle-list-item .puzzle-meta-small {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
         }
 
-        /* Progress bar */
-        .progress-bar {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 15px 0;
+        .puzzle-list-item.active .puzzle-meta-small {
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s;
+        @media (max-width: 1024px) {
+            .puzzle-sidebar {
+                max-height: none;
+            }
+
+            .puzzle-list {
+                max-height: 200px;
+            }
+
+            .board-container {
+                max-width: 400px;
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 0 1.5rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .puzzle-nav {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+                padding: 1rem;
+            }
+
+            .puzzle-controls .btn {
+                flex: 1 1 calc(50% - 0.25rem);
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>Chess Puzzle Generator</h1>
-            <p>Generate personalized chess puzzles from Chess.com games</p>
-        </div>
-
-        <!-- Job Submission Section -->
-        <div class="grid" id="jobSection">
-            <div class="card">
-                <h2>Generate Puzzles</h2>
-                <form id="jobForm">
-                    <div class="form-group">
-                        <label for="username">Chess.com Username</label>
-                        <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            placeholder="e.g., hikaru, magnuscarlsen"
-                            required
-                        >
-                    </div>
-                    <button type="submit" class="btn" id="submitBtn">
-                        Generate Puzzles
-                    </button>
-                </form>
-
-                <div id="submitStatus" class="status hidden"></div>
+        <!-- Landing Page -->
+        <div id="landingPage">
+            <div class="header">
+                <h1 class="heading-xl">Chess Puzzle Generator</h1>
+                <p class="subheading">Generate personalized chess puzzles from your Chess.com games</p>
             </div>
 
-            <div class="card">
-                <h2>Load Existing Job</h2>
-                <form id="statusForm">
-                    <div class="form-group">
-                        <label for="jobId">Job ID</label>
-                        <input
-                            type="text"
-                            id="jobId"
-                            name="jobId"
-                            placeholder="Paste job ID here"
-                            required
-                        >
-                    </div>
-                    <button type="submit" class="btn" id="statusBtn">
-                        Load Puzzles
-                    </button>
-                </form>
+            <div class="landing-grid">
+                <div class="card">
+                    <h2 class="heading-md">Generate Puzzles</h2>
+                    <form id="jobForm">
+                        <div class="form-group">
+                            <label for="username">Chess.com Username</label>
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                placeholder="e.g., hikaru, magnuscarlsen"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            Generate Puzzles
+                        </button>
+                    </form>
+                    <div id="submitStatus" class="status hidden"></div>
+                </div>
 
-                <div id="statusResult" class="status hidden"></div>
-            </div>
-        </div>
-
-        <!-- Puzzle Solver Section -->
-        <div class="card hidden" id="puzzleSolverCard">
-            <div class="puzzle-nav">
-                <button class="btn btn-secondary btn-sm" id="backToJobsBtn">
-                    &larr; Back
-                </button>
-                <span class="puzzle-counter" id="puzzleCounter">Puzzle 1 of 20</span>
-                <div>
-                    <button class="btn btn-sm" id="prevPuzzleBtn" disabled>&larr; Previous</button>
-                    <button class="btn btn-sm" id="nextPuzzleBtn">Next &rarr;</button>
+                <div class="card">
+                    <h2 class="heading-md">Load Existing Job</h2>
+                    <form id="statusForm">
+                        <div class="form-group">
+                            <label for="jobId">Job ID</label>
+                            <input
+                                type="text"
+                                id="jobId"
+                                name="jobId"
+                                placeholder="Paste job ID here"
+                                required
+                                autocomplete="off"
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="statusBtn">
+                            Load Puzzles
+                        </button>
+                    </form>
+                    <div id="statusResult" class="status hidden"></div>
                 </div>
             </div>
+        </div>
 
-            <div class="progress-bar">
-                <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
-            </div>
+        <!-- Puzzle Solver -->
+        <div class="hidden" id="puzzleSolverPage">
+            <div class="puzzle-solver-layout">
+                <!-- Main Content Area -->
+                <div class="puzzle-main">
+                    <!-- Navigation -->
+                    <div class="puzzle-nav">
+                        <button class="btn btn-secondary btn-sm" id="backToJobsBtn" aria-label="Go back to job selection">
+                            &larr; Back
+                        </button>
+                        <span class="puzzle-counter" id="puzzleCounter">Puzzle 1 of 20</span>
+                        <div class="nav-buttons">
+                            <button class="btn btn-secondary btn-sm" id="prevPuzzleBtn" disabled aria-label="Previous puzzle">&larr;</button>
+                            <button class="btn btn-secondary btn-sm" id="nextPuzzleBtn" aria-label="Next puzzle">&rarr;</button>
+                        </div>
+                    </div>
 
-            <div class="puzzle-container">
-                <div class="board-section">
-                    <div id="board"></div>
+                    <!-- Progress -->
+                    <div class="progress-container">
+                        <div class="progress-label">
+                            <span>Progress</span>
+                            <span id="progressText">0 / 20 solved</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="progressBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Chessboard -->
+                    <div class="board-container">
+                        <div id="board"></div>
+                    </div>
+
                     <div class="turn-indicator white" id="turnIndicator">White to move</div>
+
+                    <!-- Puzzle Info Panel -->
+                    <div class="puzzle-info-panel">
+                        <div class="info-row">
+                            <div class="puzzle-meta">
+                                <span class="meta-badge theme" id="puzzleTheme">Tactic</span>
+                                <span class="meta-badge rating" id="puzzleRating">Rating: 1200</span>
+                            </div>
+                            <a href="#" class="game-link hidden" target="_blank" rel="noopener noreferrer" id="gameLinkAnchor">
+                                View original game &rarr;
+                            </a>
+                        </div>
+
+                        <div class="info-row">
+                            <div id="puzzleFeedback" class="feedback hidden"></div>
+                        </div>
+
+                        <div class="move-history-section">
+                            <span class="move-history-label">Your moves:</span>
+                            <div class="move-history" id="moveHistory"></div>
+                        </div>
+
+                        <div class="puzzle-controls">
+                            <button class="btn btn-warning btn-sm" id="hintBtn">Hint</button>
+                            <button class="btn btn-secondary btn-sm" id="solutionBtn">Show Solution</button>
+                            <button class="btn btn-secondary btn-sm" id="resetPuzzleBtn">Reset Puzzle</button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="puzzle-info">
-                    <div class="puzzle-meta">
-                        <span class="meta-badge theme" id="puzzleTheme">Tactic</span>
-                        <span class="meta-badge rating" id="puzzleRating">Rating: 1200</span>
-                    </div>
-
-                    <div id="puzzleFeedback" class="feedback hidden"></div>
-
-                    <div>
-                        <strong>Your moves:</strong>
-                        <div class="move-history" id="moveHistory"></div>
-                    </div>
-
-                    <div class="puzzle-controls">
-                        <button class="btn btn-warning btn-sm" id="hintBtn">Show Hint</button>
-                        <button class="btn btn-secondary btn-sm" id="solutionBtn">Show Solution</button>
-                        <button class="btn btn-sm" id="resetPuzzleBtn">Reset Puzzle</button>
-                    </div>
-
-                    <div id="gameLink" class="hidden" style="margin-top: 15px;">
-                        <a href="#" class="game-link" target="_blank" id="gameLinkAnchor">
-                            View original game on Chess.com &rarr;
-                        </a>
-                    </div>
+                <!-- Sidebar - Puzzle List -->
+                <div class="puzzle-sidebar">
+                    <h3>All Puzzles</h3>
+                    <div class="puzzle-list" id="puzzleListCompact" role="listbox" aria-label="Puzzle list"></div>
                 </div>
-            </div>
-
-            <div style="margin-top: 20px;">
-                <h3>All Puzzles</h3>
-                <div class="puzzle-list-compact" id="puzzleListCompact"></div>
             </div>
         </div>
     </div>
@@ -563,7 +857,7 @@
             const move = game.move({
                 from: source,
                 to: target,
-                promotion: 'q' // Always promote to queen for simplicity
+                promotion: 'q'
             });
 
             if (move === null) return 'snapback';
@@ -573,26 +867,21 @@
             const userMove = move.from + move.to + (move.promotion || '');
 
             if (userMove === expectedMove || (userMove.slice(0, 4) === expectedMove.slice(0, 4))) {
-                // Correct move
                 addMoveToHistory(move.san, true);
                 currentMoveIndex++;
 
                 if (currentMoveIndex >= currentPuzzle.solution.length) {
-                    // Puzzle solved!
-                    showFeedback('Puzzle Complete! Well done!', 'complete');
+                    showFeedback('Puzzle Complete!', 'complete');
                     solvedPuzzles.add(currentPuzzleIndex);
                     updatePuzzleList();
                     updateProgress();
                 } else {
                     showFeedback('Correct!', 'correct');
-
-                    // Make opponent's response after a delay
                     setTimeout(() => {
                         makeOpponentMove();
                     }, 500);
                 }
             } else {
-                // Incorrect move - undo it
                 game.undo();
                 addMoveToHistory(move.san, false);
                 showFeedback('Incorrect. Try again!', 'incorrect');
@@ -604,7 +893,6 @@
             board.position(game.fen());
         }
 
-        // Make opponent's move (from solution)
         function makeOpponentMove() {
             const currentPuzzle = puzzles[currentPuzzleIndex];
             if (currentMoveIndex >= currentPuzzle.solution.length) return;
@@ -624,7 +912,6 @@
             }
         }
 
-        // Load a puzzle
         function loadPuzzle(index) {
             if (index < 0 || index >= puzzles.length) return;
 
@@ -632,15 +919,12 @@
             currentMoveIndex = 0;
             const puzzle = puzzles[index];
 
-            // Initialize chess.js with FEN
             game = new Chess(puzzle.fen);
 
-            // Set board position and orientation
             const turn = game.turn();
             board.orientation(turn === 'w' ? 'white' : 'black');
             board.position(puzzle.fen);
 
-            // Update UI
             updateTurnIndicator();
             updatePuzzleInfo(puzzle);
             clearMoveHistory();
@@ -665,13 +949,12 @@
             document.getElementById('puzzleRating').textContent =
                 puzzle.rating ? `Rating: ${puzzle.rating}` : 'Unrated';
 
-            const gameLink = document.getElementById('gameLink');
             const gameLinkAnchor = document.getElementById('gameLinkAnchor');
             if (puzzle.game_url) {
                 gameLinkAnchor.href = puzzle.game_url;
-                gameLink.classList.remove('hidden');
+                gameLinkAnchor.classList.remove('hidden');
             } else {
-                gameLink.classList.add('hidden');
+                gameLinkAnchor.classList.add('hidden');
             }
         }
 
@@ -681,11 +964,11 @@
             span.textContent = san;
             if (!correct) {
                 span.className = 'incorrect';
-            } else if (correct) {
+            } else {
                 span.className = 'correct';
             }
             if (isOpponent) {
-                span.style.opacity = '0.7';
+                span.style.opacity = '0.6';
             }
             history.appendChild(span);
         }
@@ -712,11 +995,12 @@
                 const isSolved = solvedPuzzles.has(i);
                 return `
                     <div class="puzzle-list-item ${isActive ? 'active' : ''} ${isSolved ? 'solved' : ''}"
-                         onclick="loadPuzzle(${i})">
-                        <span>Puzzle ${i + 1} ${isSolved ? '✓' : ''}</span>
-                        <span style="font-size: 12px; opacity: 0.7;">
-                            ${puzzle.theme || 'Tactic'} · ${puzzle.rating || '?'}
-                        </span>
+                         onclick="loadPuzzle(${i})"
+                         role="option"
+                         aria-selected="${isActive}"
+                         tabindex="0">
+                        <span class="puzzle-number">${i + 1}${isSolved ? ' ✓' : ''}</span>
+                        <span class="puzzle-meta-small">${puzzle.rating || '?'}</span>
                     </div>
                 `;
             }).join('');
@@ -730,9 +1014,9 @@
         function updateProgress() {
             const progress = (solvedPuzzles.size / puzzles.length) * 100;
             document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `${solvedPuzzles.size} / ${puzzles.length} solved`;
         }
 
-        // Show hint (highlight the source square)
         function showHint() {
             const currentPuzzle = puzzles[currentPuzzleIndex];
             if (currentMoveIndex >= currentPuzzle.solution.length) return;
@@ -740,24 +1024,21 @@
             const nextMove = currentPuzzle.solution[currentMoveIndex];
             const from = nextMove.slice(0, 2);
 
-            // Highlight source square
             const squares = document.querySelectorAll('.square-55d63');
             squares.forEach(sq => sq.style.boxShadow = '');
 
             const sourceSquare = document.querySelector(`.square-${from}`);
             if (sourceSquare) {
-                sourceSquare.style.boxShadow = 'inset 0 0 20px 5px rgba(255, 193, 7, 0.8)';
+                sourceSquare.style.boxShadow = 'inset 0 0 20px 5px rgba(245, 158, 11, 0.7)';
             }
 
             showFeedback('Hint: Move the highlighted piece', 'warning');
         }
 
-        // Show full solution
         function showSolution() {
             const currentPuzzle = puzzles[currentPuzzleIndex];
             const remainingMoves = currentPuzzle.solution.slice(currentMoveIndex);
 
-            // Play through remaining moves
             function playNextMove(moves) {
                 if (moves.length === 0) {
                     showFeedback('Solution shown', 'complete');
@@ -782,15 +1063,12 @@
             playNextMove(remainingMoves);
         }
 
-        // Reset current puzzle
         function resetPuzzle() {
             loadPuzzle(currentPuzzleIndex);
         }
 
-        // Load puzzles from API
         async function loadPuzzlesFromJob(jobId) {
             try {
-                // Get job status first
                 const jobResponse = await fetch(`${API_BASE}/jobs/${jobId}`);
                 const jobData = await jobResponse.json();
 
@@ -806,7 +1084,6 @@
                     };
                 }
 
-                // Get puzzles
                 const puzzlesResponse = await fetch(`${API_BASE}/jobs/${jobId}/puzzles`);
                 const puzzlesData = await puzzlesResponse.json();
 
@@ -832,23 +1109,24 @@
             }
         }
 
-        // Show puzzle solver
         function showPuzzleSolver(puzzleData, jobId) {
             puzzles = puzzleData;
             currentJobId = jobId;
             solvedPuzzles.clear();
 
-            document.getElementById('jobSection').classList.add('hidden');
-            document.getElementById('puzzleSolverCard').classList.remove('hidden');
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('puzzleSolverPage').classList.remove('hidden');
 
-            loadPuzzle(0);
-            updateProgress();
+            setTimeout(() => {
+                board.resize();
+                loadPuzzle(0);
+                updateProgress();
+            }, 50);
         }
 
-        // Show job section
-        function showJobSection() {
-            document.getElementById('jobSection').classList.remove('hidden');
-            document.getElementById('puzzleSolverCard').classList.add('hidden');
+        function showLandingPage() {
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('puzzleSolverPage').classList.add('hidden');
         }
 
         // Event Listeners
@@ -885,12 +1163,10 @@
                                 <strong>Job ID:</strong> ${data.id}<br>
                                 <strong>Status:</strong> ${data.status}
                             </div>
-                            <p style="margin-top: 10px;">Puzzles are being generated. This may take a few minutes for large game histories.</p>
+                            <p style="margin-top: 0.75rem; color: var(--text-muted);">Generating puzzles... This may take a few minutes.</p>
                         `;
 
                         document.getElementById('jobId').value = data.id;
-
-                        // Auto-poll for completion
                         pollJobStatus(data.id);
                     } else {
                         throw new Error(data.detail || 'Failed to create job');
@@ -932,7 +1208,7 @@
                                 <strong>Status:</strong> ${result.jobData.status}<br>
                                 <strong>Games:</strong> ${result.jobData.total_games}<br>
                                 <strong>Puzzles:</strong> ${result.jobData.total_puzzles}
-                                ${result.jobData.error_message ? `<br><strong style="color:red;">Error:</strong> ${result.jobData.error_message}` : ''}
+                                ${result.jobData.error_message ? `<br><strong style="color: var(--accent-red);">Error:</strong> ${result.jobData.error_message}` : ''}
                             </div>
                         `;
                     } else {
@@ -945,7 +1221,7 @@
             });
 
             // Navigation buttons
-            document.getElementById('backToJobsBtn').addEventListener('click', showJobSection);
+            document.getElementById('backToJobsBtn').addEventListener('click', showLandingPage);
             document.getElementById('prevPuzzleBtn').addEventListener('click', () => loadPuzzle(currentPuzzleIndex - 1));
             document.getElementById('nextPuzzleBtn').addEventListener('click', () => loadPuzzle(currentPuzzleIndex + 1));
 
@@ -953,13 +1229,21 @@
             document.getElementById('hintBtn').addEventListener('click', showHint);
             document.getElementById('solutionBtn').addEventListener('click', showSolution);
             document.getElementById('resetPuzzleBtn').addEventListener('click', resetPuzzle);
+
+            // Keyboard navigation for puzzle list
+            document.getElementById('puzzleListCompact').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const index = parseInt(e.target.querySelector('.puzzle-number')?.textContent) - 1;
+                    if (!isNaN(index)) loadPuzzle(index);
+                }
+            });
         });
 
-        // Poll job status until complete
         async function pollJobStatus(jobId) {
             const statusDiv = document.getElementById('submitStatus');
             let attempts = 0;
-            const maxAttempts = 60; // 5 minutes max
+            const maxAttempts = 60;
 
             const poll = async () => {
                 attempts++;
@@ -976,7 +1260,7 @@
                                 <strong>Games Analyzed:</strong> ${data.total_games}<br>
                                 <strong>Puzzles Generated:</strong> ${data.total_puzzles}
                             </div>
-                            <button class="btn btn-sm" style="margin-top: 10px;" onclick="document.getElementById('statusForm').dispatchEvent(new Event('submit'))">
+                            <button class="btn btn-primary btn-sm" style="margin-top: 0.75rem;" onclick="document.getElementById('statusForm').dispatchEvent(new Event('submit'))">
                                 Start Solving &rarr;
                             </button>
                         `;
@@ -994,18 +1278,17 @@
                         return;
                     }
 
-                    // Still processing
                     statusDiv.innerHTML = `
                         <strong>Processing...</strong>
                         <div class="job-info">
                             <strong>Status:</strong> ${data.status}<br>
                             <strong>Games Found:</strong> ${data.total_games}
                         </div>
-                        <p style="margin-top: 10px;">This may take a few minutes. Page will auto-update.</p>
+                        <p style="margin-top: 0.75rem; color: var(--text-muted);">This may take a few minutes. Page will auto-update.</p>
                     `;
 
                     if (attempts < maxAttempts) {
-                        setTimeout(poll, 5000); // Poll every 5 seconds
+                        setTimeout(poll, 5000);
                     }
 
                 } catch (error) {
@@ -1016,7 +1299,7 @@
                 }
             };
 
-            setTimeout(poll, 3000); // Start polling after 3 seconds
+            setTimeout(poll, 3000);
         }
     </script>
 </body>
