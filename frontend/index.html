@@ -228,8 +228,7 @@
         }
 
         .btn:focus {
-            outline: 2px solid var(--accent-green);
-            outline-offset: 2px;
+            outline: none;
         }
 
         .btn-primary {
@@ -480,13 +479,12 @@
         }
 
         .turn-indicator {
-            margin-top: 0.75rem;
             padding: 0.5rem 1rem;
             border-radius: 6px;
             font-weight: 600;
-            font-size: 0.9375rem;
+            font-size: 0.875rem;
             text-align: center;
-            align-self: center;
+            width: 100%;
         }
 
         .turn-indicator.white {
@@ -835,12 +833,12 @@
                     <div class="board-container">
                         <div id="board"></div>
                     </div>
-
-                    <div class="turn-indicator white" id="turnIndicator">White to move</div>
                 </div>
 
                 <!-- Info Panel (Middle) -->
                 <div class="puzzle-info-section">
+                    <div class="turn-indicator white" id="turnIndicator">White to move</div>
+
                     <div>
                         <div class="info-section-title">Puzzle</div>
                         <div class="puzzle-meta">
