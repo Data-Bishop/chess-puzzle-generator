@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import signal
+import threading
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 
@@ -19,21 +20,81 @@ class GameExtractionWorker:
     # Configuration
     MAX_PUZZLES_PER_GAME = 2
     MAX_TOTAL_PUZZLES = 20
+    CLEANUP_INTERVAL_SECONDS = 3600  # Run cleanup every hour
 
     def __init__(self):
         """Initialize worker."""
         self.running = True
         self.chess_client = ChessComClient()
         self.puzzle_generator = PuzzleGenerator()
+        self.cleanup_thread = None
 
         # Handle graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
+        # Start cleanup scheduler
+        self._start_cleanup_scheduler()
+
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals."""
         print("\nReceived shutdown signal. Finishing current job...")
         self.running = False
+
+    def _start_cleanup_scheduler(self):
+        """Start background thread for periodic cleanup of expired puzzles."""
+        def cleanup_loop():
+            # Run first cleanup after 60 seconds (give time for startup)
+            initial_delay = 60
+            for _ in range(initial_delay):
+                if not self.running:
+                    return
+                time.sleep(1)
+
+            while self.running:
+                try:
+                    self._cleanup_expired_data()
+                except Exception as e:
+                    print(f"Error in cleanup: {e}")
+
+                # Sleep in small increments to allow quick shutdown
+                for _ in range(self.CLEANUP_INTERVAL_SECONDS):
+                    if not self.running:
+                        break
+                    time.sleep(1)
+
+        self.cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
+        self.cleanup_thread.start()
+        print("Started puzzle cleanup scheduler (runs every hour)")
+
+    def _cleanup_expired_data(self):
+        """Delete expired puzzles and old empty jobs."""
+        db = SessionLocal()
+        try:
+            now = datetime.utcnow()
+
+            # Delete expired puzzles
+            expired_puzzles = db.query(Puzzle).filter(
+                Puzzle.expires_at < now
+            ).delete(synchronize_session=False)
+
+            # Delete old jobs with no puzzles (older than 24 hours)
+            old_empty_jobs = db.query(Job).filter(
+                Job.created_at < now - timedelta(hours=24),
+                Job.total_puzzles == 0,
+                Job.status.in_(["completed", "failed"])
+            ).delete(synchronize_session=False)
+
+            db.commit()
+
+            if expired_puzzles > 0 or old_empty_jobs > 0:
+                print(f"[Cleanup] Deleted {expired_puzzles} expired puzzles, {old_empty_jobs} old empty jobs")
+
+        except Exception as e:
+            print(f"Error during cleanup: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     def run(self):
         """Main worker loop."""

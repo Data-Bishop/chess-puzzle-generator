@@ -272,6 +272,105 @@
             transform: scale(0.98);
         }
 
+        /* Collapsible Filters */
+        .filters-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 0.5rem 0;
+            margin-bottom: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .filters-toggle:hover {
+            color: var(--text-primary);
+        }
+
+        .filters-toggle svg {
+            transition: transform 0.2s;
+        }
+
+        .filters-toggle.expanded svg {
+            transform: rotate(180deg);
+        }
+
+        .filters-panel {
+            display: none;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters-panel.show {
+            display: block;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-row .form-group {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 480px) {
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Date, Number Inputs, and Select */
+        input[type="date"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            padding-right: 2.5rem;
+            cursor: pointer;
+        }
+
+        /* Fix date input calendar icon color in dark mode */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
         /* Status Messages */
         .status {
             padding: 1rem 1.25rem;
@@ -313,6 +412,90 @@
 
         .job-info strong {
             color: var(--accent-green);
+        }
+
+        /* Job History */
+        .job-history-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .job-history-section h3 {
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        #jobHistoryList {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.625rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .history-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .history-username {
+            font-weight: 500;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 0.375rem;
+            margin-left: 0.5rem;
+        }
+
+        .history-delete {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 0.25rem 0.5rem;
+            font-size: 1rem;
+            line-height: 1;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .history-delete:hover {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .no-history {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-align: center;
+            padding: 1rem;
         }
 
         /* Loading Spinner */
@@ -771,6 +954,56 @@
                                 autocomplete="off"
                             >
                         </div>
+
+                        <!-- Advanced Filters Toggle -->
+                        <button type="button" class="filters-toggle" id="filtersToggle" aria-expanded="false">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                <path d="M6 8L1 3h10z"/>
+                            </svg>
+                            Advanced Filters (optional)
+                        </button>
+
+                        <!-- Collapsible Filters Panel -->
+                        <div class="filters-panel" id="filtersPanel">
+                            <!-- Date Range -->
+                            <div class="filter-row">
+                                <div class="form-group">
+                                    <label for="dateFrom">From Date</label>
+                                    <input type="date" id="dateFrom" name="dateFrom">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateTo">To Date</label>
+                                    <input type="date" id="dateTo" name="dateTo">
+                                </div>
+                            </div>
+
+                            <!-- Time Control -->
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label for="timeControl">Time Control</label>
+                                <select id="timeControl" name="timeControl">
+                                    <option value="">All Time Controls</option>
+                                    <option value="bullet">Bullet</option>
+                                    <option value="blitz">Blitz</option>
+                                    <option value="rapid">Rapid</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                            </div>
+
+                            <!-- Rating Range -->
+                            <div class="filter-row">
+                                <div class="form-group">
+                                    <label for="minRating">Min Rating</label>
+                                    <input type="number" id="minRating" name="minRating"
+                                           min="0" max="3500" step="50" placeholder="e.g., 800">
+                                </div>
+                                <div class="form-group">
+                                    <label for="maxRating">Max Rating</label>
+                                    <input type="number" id="maxRating" name="maxRating"
+                                           min="0" max="3500" step="50" placeholder="e.g., 2000">
+                                </div>
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-primary" id="submitBtn">
                             Generate Puzzles
                         </button>
@@ -797,6 +1030,12 @@
                         </button>
                     </form>
                     <div id="statusResult" class="status hidden"></div>
+
+                    <!-- Job History -->
+                    <div class="job-history-section">
+                        <h3>Recent Jobs</h3>
+                        <div id="jobHistoryList"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -896,6 +1135,116 @@
         let game = null;
         let solvedPuzzles = new Set();
         let currentJobId = null;
+
+        // Job History Management
+        const JOB_HISTORY_KEY = 'chess_puzzle_job_history';
+        const MAX_HISTORY_ITEMS = 10;
+
+        function getJobHistory() {
+            try {
+                const history = localStorage.getItem(JOB_HISTORY_KEY);
+                return history ? JSON.parse(history) : [];
+            } catch (e) {
+                console.error('Error reading job history:', e);
+                return [];
+            }
+        }
+
+        function addToJobHistory(jobId, username) {
+            const history = getJobHistory();
+
+            // Remove existing entry for same job if present
+            const filtered = history.filter(item => item.jobId !== jobId);
+
+            // Add new entry at beginning
+            filtered.unshift({
+                jobId,
+                username,
+                createdAt: new Date().toISOString()
+            });
+
+            // Keep only most recent items
+            const trimmed = filtered.slice(0, MAX_HISTORY_ITEMS);
+
+            try {
+                localStorage.setItem(JOB_HISTORY_KEY, JSON.stringify(trimmed));
+            } catch (e) {
+                console.error('Error saving job history:', e);
+            }
+
+            renderJobHistory();
+        }
+
+        function removeFromJobHistory(jobId) {
+            const history = getJobHistory();
+            const filtered = history.filter(item => item.jobId !== jobId);
+
+            try {
+                localStorage.setItem(JOB_HISTORY_KEY, JSON.stringify(filtered));
+            } catch (e) {
+                console.error('Error removing from job history:', e);
+            }
+
+            renderJobHistory();
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        function renderJobHistory() {
+            const history = getJobHistory();
+            const container = document.getElementById('jobHistoryList');
+
+            if (!container) return;
+
+            if (history.length === 0) {
+                container.innerHTML = '<p class="no-history">No recent jobs</p>';
+                return;
+            }
+
+            container.innerHTML = history.map(item => {
+                const date = new Date(item.createdAt);
+                const timeAgo = getTimeAgo(date);
+
+                return `
+                    <div class="history-item" data-job-id="${item.jobId}">
+                        <div class="history-info">
+                            <span class="history-username">${item.username}</span>
+                            <span class="history-time">${timeAgo}</span>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn btn-secondary btn-sm" onclick="loadHistoryJob('${item.jobId}')">
+                                Load
+                            </button>
+                            <button class="history-delete" onclick="deleteHistoryJob('${item.jobId}')" title="Remove from history">
+                                &times;
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function loadHistoryJob(jobId) {
+            document.getElementById('jobId').value = jobId;
+            document.getElementById('statusForm').dispatchEvent(new Event('submit'));
+        }
+
+        async function deleteHistoryJob(jobId) {
+            // Try to delete from backend (ignore errors)
+            try {
+                await fetch(`${API_BASE}/jobs/${jobId}`, { method: 'DELETE' });
+            } catch (e) {
+                // Ignore backend errors, still remove from local history
+            }
+            removeFromJobHistory(jobId);
+        }
 
         // Initialize chessboard
         function initBoard() {
@@ -1242,6 +1591,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             initBoard();
 
+            // Filter toggle
+            const filtersToggle = document.getElementById('filtersToggle');
+            const filtersPanel = document.getElementById('filtersPanel');
+
+            filtersToggle.addEventListener('click', () => {
+                const isExpanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+                filtersToggle.setAttribute('aria-expanded', !isExpanded);
+                filtersToggle.classList.toggle('expanded');
+                filtersPanel.classList.toggle('show');
+            });
+
+            // Initialize job history display
+            renderJobHistory();
+
             // Submit job form
             document.getElementById('jobForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1249,6 +1612,23 @@
                 const username = document.getElementById('username').value.trim();
                 const submitBtn = document.getElementById('submitBtn');
                 const statusDiv = document.getElementById('submitStatus');
+
+                // Collect filter values
+                const dateFrom = document.getElementById('dateFrom').value;
+                const dateTo = document.getElementById('dateTo').value;
+                const timeControl = document.getElementById('timeControl').value;
+                const minRating = document.getElementById('minRating').value;
+                const maxRating = document.getElementById('maxRating').value;
+
+                // Build payload with filters
+                const payload = {
+                    username,
+                    date_from: dateFrom ? new Date(dateFrom).toISOString() : null,
+                    date_to: dateTo ? new Date(dateTo).toISOString() : null,
+                    time_control: timeControl || null,
+                    min_rating: minRating ? parseInt(minRating) : null,
+                    max_rating: maxRating ? parseInt(maxRating) : null,
+                };
 
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<span class="loading"></span> Submitting...';
@@ -1258,7 +1638,7 @@
                     const response = await fetch(`${API_BASE}/jobs`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username }),
+                        body: JSON.stringify(payload),
                     });
 
                     const data = await response.json();
@@ -1276,7 +1656,20 @@
                         `;
 
                         document.getElementById('jobId').value = data.id;
+                        addToJobHistory(data.id, username);
                         pollJobStatus(data.id);
+                    } else if (response.status === 429) {
+                        // Rate limit exceeded
+                        statusDiv.className = 'status error';
+                        statusDiv.classList.remove('hidden');
+                        const retryAfter = response.headers.get('Retry-After');
+                        const minutes = retryAfter ? Math.ceil(parseInt(retryAfter) / 60) : 60;
+                        statusDiv.innerHTML = `
+                            <strong>Rate Limit Exceeded</strong>
+                            <p style="margin-top: 0.5rem; color: var(--text-muted);">
+                                You've created too many jobs recently. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before trying again.
+                            </p>
+                        `;
                     } else {
                         throw new Error(data.detail || 'Failed to create job');
                     }

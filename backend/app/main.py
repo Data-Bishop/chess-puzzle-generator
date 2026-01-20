@@ -1,6 +1,7 @@
 """FastAPI main application."""
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import List
 from uuid import UUID
@@ -10,6 +11,7 @@ from models import Job, Puzzle
 from schemas import JobCreate, JobResponse, PuzzleResponse, PuzzleListResponse
 from config import settings
 from job_queue import queue
+from rate_limiter import rate_limiter
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -47,8 +49,41 @@ def health_check():
     return {"status": "healthy"}
 
 
+def get_client_ip(request: Request) -> str:
+    """Extract client IP address, handling proxies."""
+    # Check X-Forwarded-For header (set by proxies/load balancers)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # Take the first IP in the chain (original client)
+        return forwarded_for.split(",")[0].strip()
+    # Fall back to direct client host
+    return request.client.host if request.client else "unknown"
+
+
+def check_rate_limit(request: Request):
+    """
+    Dependency to check rate limit for job creation.
+
+    Raises:
+        HTTPException: 429 if rate limit exceeded
+    """
+    client_ip = get_client_ip(request)
+    is_allowed, retry_after = rate_limiter.is_allowed(client_ip)
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Rate limit exceeded. Try again in {retry_after} seconds.",
+            headers={"Retry-After": str(retry_after)}
+        )
+
+
 @app.post("/jobs", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
-def create_job(job_data: JobCreate, db: Session = Depends(get_db)):
+def create_job(
+    job_data: JobCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(check_rate_limit)
+):
     """
     Create a new puzzle generation job.
 
@@ -150,3 +185,29 @@ def get_job_puzzles(job_id: UUID, db: Session = Depends(get_db)):
         puzzles=puzzles,
         total=len(puzzles)
     )
+
+
+@app.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_job(job_id: UUID, db: Session = Depends(get_db)):
+    """
+    Delete a job and its associated puzzles.
+
+    Args:
+        job_id: UUID of the job
+        db: Database session
+
+    Raises:
+        HTTPException: 404 if job not found
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job {job_id} not found"
+        )
+
+    db.delete(job)  # Cascades to puzzles due to relationship configuration
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
