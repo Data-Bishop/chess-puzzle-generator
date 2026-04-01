@@ -3,6 +3,7 @@ import os
 import sys
 import time
 import signal
+import random
 import threading
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
@@ -20,6 +21,7 @@ class GameExtractionWorker:
     # Configuration
     MAX_PUZZLES_PER_GAME = 2
     MAX_TOTAL_PUZZLES = 20
+    MAX_GAMES_TO_ANALYZE = 100  # Cap games before Stockfish analysis to prevent timeouts
     CLEANUP_INTERVAL_SECONDS = 3600  # Run cleanup every hour
 
     def __init__(self):
@@ -185,10 +187,16 @@ class GameExtractionWorker:
                 total_games=len(games)
             )
 
+            # Sample games to keep analysis time reasonable
+            games_to_analyze = games
+            if len(games) > self.MAX_GAMES_TO_ANALYZE:
+                games_to_analyze = random.sample(games, self.MAX_GAMES_TO_ANALYZE)
+                print(f"Sampled {self.MAX_GAMES_TO_ANALYZE} games from {len(games)} for analysis")
+
             # Generate puzzles from games
-            print(f"Generating puzzles from {len(games)} games...")
+            print(f"Generating puzzles from {len(games_to_analyze)} games...")
             puzzles = self.puzzle_generator.generate_puzzles_from_games(
-                games,
+                games_to_analyze,
                 max_puzzles_per_game=self.MAX_PUZZLES_PER_GAME,
                 max_total_puzzles=self.MAX_TOTAL_PUZZLES
             )

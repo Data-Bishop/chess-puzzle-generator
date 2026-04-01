@@ -24,11 +24,11 @@ class PuzzleGenerator:
     # Minimum centipawn swing to consider a position tactical
     MIN_EVAL_SWING = 200  # 2 pawns
 
-    # Stockfish analysis depth
-    ANALYSIS_DEPTH = 18
+    # Stockfish analysis depth for position scanning
+    ANALYSIS_DEPTH = 12
 
-    # Analysis time limit per position (seconds)
-    TIME_LIMIT = 0.5
+    # Analysis time limit per position (seconds) - kept low for throughput
+    TIME_LIMIT = 0.1
 
     def __init__(self, stockfish_path: Optional[str] = None):
         """
@@ -153,7 +153,7 @@ class PuzzleGenerator:
         try:
             self._start_engine()
 
-            for game in games:
+            for i, game in enumerate(games):
                 if len(all_puzzles) >= max_total_puzzles:
                     break
 
@@ -171,6 +171,9 @@ class PuzzleGenerator:
 
                 remaining = max_total_puzzles - len(all_puzzles)
                 all_puzzles.extend(puzzles[:remaining])
+
+                if (i + 1) % 10 == 0:
+                    print(f"  Analyzed {i + 1}/{len(games)} games, {len(all_puzzles)} puzzles so far")
 
         finally:
             self._stop_engine()
@@ -234,7 +237,7 @@ class PuzzleGenerator:
             # Find the best move sequence (solution)
             result = self.engine.analyse(
                 board,
-                chess.engine.Limit(time=1.0, depth=20)
+                chess.engine.Limit(time=0.5, depth=15)
             )
 
             pv = result.get("pv", [])
