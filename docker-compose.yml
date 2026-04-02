@@ -11,7 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-databishop}"]
       interval: 10s
@@ -44,7 +44,7 @@ services:
     container_name: backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-databishop}:${POSTGRES_PASSWORD:-databishop}@postgres:5432/${POSTGRES_DB:-chess_puzzles}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       API_HOST: 0.0.0.0
       API_PORT: 8000
       ENVIRONMENT: ${ENVIRONMENT:-development}
@@ -72,7 +72,7 @@ services:
     container_name: worker
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-databishop}:${POSTGRES_PASSWORD:-databishop}@postgres:5432/${POSTGRES_DB:-chess_puzzles}
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       PYTHONUNBUFFERED: 1
       STOCKFISH_PATH: /usr/games/stockfish

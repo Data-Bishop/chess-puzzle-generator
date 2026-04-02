@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     completed_at TIMESTAMP WITH TIME ZONE,
     error_message TEXT,
 
-    -- Optional filters (for Phase 5)
+    -- Optional filters
     date_from DATE,
     date_to DATE,
     min_rating INTEGER,
