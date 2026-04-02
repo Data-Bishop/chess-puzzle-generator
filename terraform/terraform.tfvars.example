@@ -1,0 +1,13 @@
+# Copy this file to terraform.tfvars and fill in your values.
+
+aws_region     = "eu-north-1"
+project_name   = "chess-puzzle-generator"
+
+# Must be globally unique across all AWS accounts
+s3_bucket_name = "chess-puzzle-generator-games-238845559191"
+
+# Public IP or DNS of your EC2 instance (must be reachable from Lambda)
+ec2_api_url    = "http://<your-ec2-public-ip>:8000"
+
+# Must match LAMBDA_SECRET in your EC2 .env file
+lambda_secret  = "<same value as LAMBDA_SECRET in .env>"
