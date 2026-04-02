@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     # Shared secret for Lambda → EC2 callbacks (must match Terraform variable)
     lambda_secret: str = ""
 
+    # AWS settings (required when worker_mode = "lambda")
+    aws_region: str = "eu-north-1"
+    lambda_etl_arn: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False

@@ -1,5 +1,7 @@
 """FastAPI main application."""
+import json
 from datetime import datetime, timedelta
+import boto3
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -124,11 +126,20 @@ def create_job(
         "time_control": new_job.time_control,
     }
 
-    queue_success = queue.push(str(new_job.id), queue_data)
-
-    if not queue_success:
-        # Log error but don't fail the request (job is already in database)
-        print(f"Warning: Failed to push job {new_job.id} to queue")
+    if settings.worker_mode == "lambda":
+        try:
+            lambda_client = boto3.client("lambda", region_name=settings.aws_region)
+            lambda_client.invoke(
+                FunctionName=settings.lambda_etl_arn,
+                InvocationType="Event",  # async — returns immediately
+                Payload=json.dumps(queue_data).encode(),
+            )
+        except Exception as e:
+            print(f"Warning: Failed to invoke ETL Lambda for job {new_job.id}: {e}")
+    else:
+        queue_success = queue.push(str(new_job.id), queue_data)
+        if not queue_success:
+            print(f"Warning: Failed to push job {new_job.id} to queue")
 
     return new_job
 

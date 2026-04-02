@@ -47,3 +47,12 @@ yarn-error.log*
 # Build outputs
 frontend/dist/
 frontend/build/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+!*.tfvars.example
+terraform/builds/

@@ -50,8 +50,8 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       WORKER_MODE: ${WORKER_MODE:-local}
       LAMBDA_SECRET: ${LAMBDA_SECRET:-}
-      LAMBDA_ETL_URL: ${LAMBDA_ETL_URL:-}
-      LAMBDA_PUZZLES_URL: ${LAMBDA_PUZZLES_URL:-}
+      AWS_REGION: ${AWS_REGION:-eu-north-1}
+      LAMBDA_ETL_ARN: ${LAMBDA_ETL_ARN:-}
     ports:
       - "8000:8000"
     volumes:
