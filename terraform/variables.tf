@@ -15,9 +15,10 @@ variable "s3_bucket_name" {
   type        = string
 }
 
-variable "ec2_api_url" {
-  description = "Base URL of the FastAPI backend on EC2, e.g. http://1.2.3.4:8000"
+variable "ec2_instance_type" {
+  description = "EC2 instance type"
   type        = string
+  default     = "t3.small"
 }
 
 variable "lambda_secret" {

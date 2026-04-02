@@ -41,6 +41,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "games" {
     id     = "expire-game-data"
     status = "Enabled"
 
+    filter {}  # apply to all objects in the bucket
+
     expiration {
       days = 1
     }

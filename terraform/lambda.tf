@@ -48,7 +48,7 @@ resource "aws_lambda_function" "etl" {
 
   environment {
     variables = {
-      EC2_API_URL        = var.ec2_api_url
+      EC2_API_URL        = "http://${aws_eip.ec2.public_ip}:8000"
       LAMBDA_SECRET      = var.lambda_secret
       S3_BUCKET_NAME     = aws_s3_bucket.games.bucket
       LAMBDA_PUZZLES_ARN = aws_lambda_function.puzzles.arn
@@ -132,7 +132,7 @@ resource "aws_lambda_function" "puzzles" {
 
   environment {
     variables = {
-      EC2_API_URL    = var.ec2_api_url
+      EC2_API_URL    = "http://${aws_eip.ec2.public_ip}:8000"
       LAMBDA_SECRET  = var.lambda_secret
       STOCKFISH_PATH = "/usr/local/bin/stockfish"
     }
