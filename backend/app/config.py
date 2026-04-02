@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Worker mode: "local" (Redis queue) or "lambda" (AWS Lambda)
     worker_mode: str = "local"
 
-    # Shared secret for Lambda → VPS callbacks (must match Terraform variable)
+    # Shared secret for Lambda → EC2 callbacks (must match Terraform variable)
     lambda_secret: str = ""
 
     class Config:
