@@ -1,0 +1,7 @@
+pytest==8.0.0
+pytest-mock==3.12.0
+moto[s3,lambda]==5.0.0
+respx==0.20.4
+httpx==0.26.0
+boto3==1.34.34
+python-chess==1.999

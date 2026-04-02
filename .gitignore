@@ -48,6 +48,11 @@ yarn-error.log*
 frontend/dist/
 frontend/build/
 
+# Test coverage
+.coverage
+backend/tests/coverage/
+htmlcov/
+
 # Terraform
 .terraform/
 .terraform.lock.hcl
