@@ -1,5 +1,6 @@
 """FastAPI main application."""
-from fastapi import FastAPI, Depends, HTTPException, status, Request
+from datetime import datetime, timedelta
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -8,7 +9,10 @@ from uuid import UUID
 
 from database import get_db, engine, Base
 from models import Job, Puzzle
-from schemas import JobCreate, JobResponse, PuzzleResponse, PuzzleListResponse
+from schemas import (
+    JobCreate, JobResponse, PuzzleResponse, PuzzleListResponse,
+    LambdaStatusUpdate, LambdaPuzzleIngest,
+)
 from config import settings
 from job_queue import queue
 from rate_limiter import rate_limiter
@@ -211,3 +215,91 @@ def delete_job(job_id: UUID, db: Session = Depends(get_db)):
     db.commit()
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+def verify_lambda_secret(authorization: str = Header(None)):
+    """Dependency that validates the shared secret sent by Lambda callbacks."""
+    expected = settings.lambda_secret
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Lambda secret not configured on server"
+        )
+    if authorization != f"Bearer {expected}":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing authorization token"
+        )
+
+
+@app.post("/jobs/{job_id}/status", status_code=status.HTTP_200_OK)
+def update_job_status(
+    job_id: UUID,
+    payload: LambdaStatusUpdate,
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_lambda_secret),
+):
+    """
+    Callback endpoint for Lambda to update job status.
+
+    Called by the ETL Lambda when games are extracted, and by the
+    Puzzle Generator Lambda when puzzles are ready or an error occurs.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
+
+    job.status = payload.status
+
+    if payload.total_games is not None:
+        job.total_games = payload.total_games
+
+    if payload.error_message:
+        job.error_message = payload.error_message
+
+    if payload.status in ("completed", "failed"):
+        job.completed_at = datetime.utcnow()
+
+    db.commit()
+    return {"ok": True}
+
+
+@app.post("/jobs/{job_id}/puzzles/ingest", status_code=status.HTTP_201_CREATED)
+def ingest_puzzles(
+    job_id: UUID,
+    payload: LambdaPuzzleIngest,
+    db: Session = Depends(get_db),
+    _: None = Depends(verify_lambda_secret),
+):
+    """
+    Callback endpoint for Lambda to bulk-insert generated puzzles.
+
+    Called by the Puzzle Generator Lambda once Stockfish analysis is done.
+    """
+    job = db.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
+
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+
+    new_puzzles = [
+        Puzzle(
+            job_id=job_id,
+            fen=p.fen,
+            solution=p.solution,
+            theme=p.theme,
+            rating=p.rating,
+            game_url=p.game_url,
+            expires_at=expires_at,
+        )
+        for p in payload.puzzles
+    ]
+    db.add_all(new_puzzles)
+
+    job.total_games = payload.total_games
+    job.total_puzzles = len(new_puzzles)
+    job.status = "completed"
+    job.completed_at = datetime.utcnow()
+
+    db.commit()
+    return {"ok": True, "puzzles_stored": len(new_puzzles)}

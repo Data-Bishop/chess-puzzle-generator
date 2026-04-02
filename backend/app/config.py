@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Chess.com API
     chess_com_api_base_url: str = "https://api.chess.com/pub"
 
+    # Worker mode: "local" (Redis queue) or "lambda" (AWS Lambda)
+    worker_mode: str = "local"
+
+    # Shared secret for Lambda → VPS callbacks (must match Terraform variable)
+    lambda_secret: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False

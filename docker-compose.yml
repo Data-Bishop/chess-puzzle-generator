@@ -48,6 +48,10 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       ENVIRONMENT: ${ENVIRONMENT:-development}
+      WORKER_MODE: ${WORKER_MODE:-local}
+      LAMBDA_SECRET: ${LAMBDA_SECRET:-}
+      LAMBDA_ETL_URL: ${LAMBDA_ETL_URL:-}
+      LAMBDA_PUZZLES_URL: ${LAMBDA_PUZZLES_URL:-}
     ports:
       - "8000:8000"
     volumes:
@@ -60,7 +64,7 @@ services:
     networks:
       - backend_network
 
-  # Game Extraction Worker (with Stockfish)
+  # Game Extraction Worker (with Stockfish) — only used in local worker mode
   worker:
     build:
       context: ./backend
@@ -72,6 +76,7 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       PYTHONUNBUFFERED: 1
       STOCKFISH_PATH: /usr/games/stockfish
+      WORKER_MODE: ${WORKER_MODE:-local}
     volumes:
       - ./backend/app:/app
     depends_on:

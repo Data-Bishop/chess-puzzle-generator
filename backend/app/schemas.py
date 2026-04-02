@@ -52,3 +52,26 @@ class PuzzleListResponse(BaseModel):
     """Schema for list of puzzles."""
     puzzles: List[PuzzleResponse]
     total: int
+
+
+# Lambda callback schemas
+class LambdaStatusUpdate(BaseModel):
+    """Payload Lambda sends to update job status."""
+    status: str
+    total_games: Optional[int] = None
+    error_message: Optional[str] = None
+
+
+class LambdaPuzzleData(BaseModel):
+    """Single puzzle sent by Lambda."""
+    fen: str
+    solution: List[str]
+    theme: Optional[str] = None
+    rating: Optional[int] = None
+    game_url: Optional[str] = None
+
+
+class LambdaPuzzleIngest(BaseModel):
+    """Payload Lambda sends when puzzle generation is complete."""
+    puzzles: List[LambdaPuzzleData]
+    total_games: int
