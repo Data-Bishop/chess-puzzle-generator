@@ -39,7 +39,7 @@ resource "null_resource" "etl_package" {
 resource "aws_lambda_function" "etl" {
   function_name    = "${var.project_name}-etl"
   role             = aws_iam_role.etl_lambda.arn
-  runtime          = "python3.11"
+  runtime          = "python3.12"
   handler          = "handler.handler"
   filename         = "${path.module}/builds/etl_lambda.zip"
   source_code_hash = local.etl_source_hash
