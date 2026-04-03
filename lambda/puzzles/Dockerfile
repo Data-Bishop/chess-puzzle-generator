@@ -1,7 +1,8 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM public.ecr.aws/lambda/python:3.12
 
-# Install Stockfish static binary (compiled for x86_64 Linux)
-# Using the official release — no system package manager needed
+# Install tar (not present in the Lambda base image) then fetch Stockfish
+RUN dnf install -y tar && dnf clean all
+
 RUN curl -fsSL \
     "https://github.com/official-stockfish/Stockfish/releases/download/sf_17/stockfish-ubuntu-x86-64-avx2.tar" \
     -o /tmp/stockfish.tar \

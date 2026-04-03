@@ -70,6 +70,10 @@ resource "aws_instance" "ec2" {
       -o /usr/local/bin/docker-compose
     chmod +x /usr/local/bin/docker-compose
     ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+    # Clone application repo
+    git clone https://github.com/Data-Bishop/chess-puzzle-generator.git /home/ec2-user/app
+    chown -R ec2-user:ec2-user /home/ec2-user/app
   EOF
 
   tags = {

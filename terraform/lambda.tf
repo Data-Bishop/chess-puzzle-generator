@@ -114,7 +114,7 @@ resource "null_resource" "puzzles_image" {
     command = <<-EOT
       aws ecr get-login-password --region ${var.aws_region} | \
         docker login --username AWS --password-stdin ${aws_ecr_repository.puzzles.repository_url}
-      docker build -t ${local.puzzles_image_uri} ${path.module}/../lambda/puzzles
+      docker build --platform linux/amd64 --provenance=false -t ${local.puzzles_image_uri} ${path.module}/../lambda/puzzles
       docker push ${local.puzzles_image_uri}
     EOT
   }
