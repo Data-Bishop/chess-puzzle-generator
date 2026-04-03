@@ -1,9 +1,12 @@
 """Application configuration."""
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+
+    model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
     # Database
     database_url: str
@@ -28,10 +31,6 @@ class Settings(BaseSettings):
     # AWS settings (required when worker_mode = "lambda")
     aws_region: str = "eu-north-1"
     lambda_etl_arn: str = ""
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 settings = Settings()

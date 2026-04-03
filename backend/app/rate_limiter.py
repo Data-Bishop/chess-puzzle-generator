@@ -1,5 +1,5 @@
 """Redis-based rate limiting."""
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Tuple
 
 import redis
@@ -50,7 +50,7 @@ class RateLimiter:
             - retry_after_seconds: Seconds until rate limit resets (None if allowed)
         """
         key = self._get_key(identifier)
-        now = datetime.utcnow().timestamp()
+        now = datetime.now(timezone.utc).timestamp()
         window_start = now - self.window_seconds
 
         pipe = self.redis_client.pipeline()
@@ -92,7 +92,7 @@ class RateLimiter:
             Number of remaining requests allowed
         """
         key = self._get_key(identifier)
-        now = datetime.utcnow().timestamp()
+        now = datetime.now(timezone.utc).timestamp()
         window_start = now - self.window_seconds
 
         # Clean old entries and count current

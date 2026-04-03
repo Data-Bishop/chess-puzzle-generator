@@ -8,6 +8,16 @@ so tests are fully isolated and leave no data behind.
 Prerequisites: docker-compose up (postgres service must be running)
 """
 import os
+
+# Provide defaults so Settings() doesn't fail when running tests locally
+# without a .env file. Tests that actually hit the DB/Redis will still
+# need the services running, but schema/unit tests work without them.
+os.environ.setdefault(
+    "DATABASE_URL",
+    "postgresql://databishop:databishop@localhost:5432/chess_puzzles_test",
+)
+os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -35,7 +45,7 @@ def _ensure_test_db_exists() -> None:
     engine.dispose()
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def test_database():
     """Create schema in the test database once per test session."""
     _ensure_test_db_exists()

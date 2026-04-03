@@ -1,7 +1,7 @@
 """Pydantic schemas for request/response validation."""
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 
 
@@ -18,6 +18,8 @@ class JobCreate(BaseModel):
 
 class JobResponse(BaseModel):
     """Schema for job response."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     username: str
     status: str
@@ -28,13 +30,12 @@ class JobResponse(BaseModel):
     total_games: int
     total_puzzles: int
 
-    class Config:
-        from_attributes = True
-
 
 # Puzzle Schemas
 class PuzzleResponse(BaseModel):
     """Schema for puzzle response."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     job_id: UUID
     fen: str
@@ -43,9 +44,6 @@ class PuzzleResponse(BaseModel):
     rating: Optional[int]
     game_url: Optional[str]
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class PuzzleListResponse(BaseModel):
