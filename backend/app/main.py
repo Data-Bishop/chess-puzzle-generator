@@ -1,6 +1,6 @@
 """FastAPI main application."""
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import boto3
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -269,7 +269,7 @@ def update_job_status(
         job.error_message = payload.error_message
 
     if payload.status in ("completed", "failed"):
-        job.completed_at = datetime.utcnow()
+        job.completed_at = datetime.now(timezone.utc)
 
     db.commit()
     return {"ok": True}
@@ -291,7 +291,7 @@ def ingest_puzzles(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Job {job_id} not found")
 
-    expires_at = datetime.utcnow() + timedelta(hours=24)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
     new_puzzles = [
         Puzzle(
@@ -310,7 +310,7 @@ def ingest_puzzles(
     job.total_games = payload.total_games
     job.total_puzzles = len(new_puzzles)
     job.status = "completed"
-    job.completed_at = datetime.utcnow()
+    job.completed_at = datetime.now(timezone.utc)
 
     db.commit()
     return {"ok": True, "puzzles_stored": len(new_puzzles)}

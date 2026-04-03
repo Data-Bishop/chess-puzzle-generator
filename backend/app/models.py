@@ -1,5 +1,5 @@
 """SQLAlchemy ORM models."""
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -16,8 +16,8 @@ class Job(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = Column(String(255), nullable=False, index=True)
     status = Column(String(50), nullable=False, default="pending", index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
     error_message = Column(Text, nullable=True)
 
@@ -48,8 +48,8 @@ class Puzzle(Base):
     theme = Column(String(100), nullable=True)  # e.g., "fork"
     rating = Column(Integer, nullable=True)  # Estimated puzzle difficulty
     game_url = Column(String(500), nullable=True)  # Link to original Chess.com game
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(hours=24), index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, default=lambda: datetime.now(timezone.utc) + timedelta(hours=24), index=True)
 
     # Relationship to job
     job = relationship("Job", back_populates="puzzles")
