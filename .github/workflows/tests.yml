@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: databishop
+          POSTGRES_PASSWORD: databishop
+          POSTGRES_DB: chess_puzzles_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U databishop"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-test.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://databishop:databishop@localhost:5432/chess_puzzles_test
+          REDIS_URL: redis://localhost:6379/0
+        run: pytest tests/ -v --cov=app --cov-report=term-missing
+
+  lambda:
+    name: Lambda tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: lambda
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: lambda/requirements-test.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-test.txt
+
+      - name: Run tests
+        run: pytest tests/ -v
