@@ -8,6 +8,7 @@ Environment variables (set by Terraform):
     STOCKFISH_PATH — Path to Stockfish binary inside the container (default: /usr/local/bin/stockfish)
 """
 import json
+import logging
 import os
 from io import StringIO
 from typing import Any, Dict, List, Optional
@@ -17,6 +18,9 @@ import chess
 import chess.engine
 import chess.pgn
 import httpx
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 EC2_API_URL = os.environ["EC2_API_URL"]
 LAMBDA_SECRET = os.environ["LAMBDA_SECRET"]
@@ -54,14 +58,14 @@ def handler(event, context):
 
     try:
         # Load games from S3
-        print(f"Loading games from s3://{s3_bucket}/{s3_key}")
+        logger.info("Loading games from s3://%s/%s", s3_bucket, s3_key)
         obj = s3.get_object(Bucket=s3_bucket, Key=s3_key)
         games: List[Dict[str, Any]] = json.loads(obj["Body"].read())
-        print(f"Loaded {len(games)} games")
+        logger.info("Loaded %d games", len(games))
 
         # Generate puzzles
         puzzles = _generate_puzzles(games)
-        print(f"Generated {len(puzzles)} puzzles")
+        logger.info("Generated %d puzzles", len(puzzles))
 
         # POST puzzles back to EC2
         _ingest_puzzles(job_id, puzzles, total_games)
@@ -69,15 +73,12 @@ def handler(event, context):
         return {"statusCode": 200, "body": json.dumps({"ok": True, "puzzles": len(puzzles)})}
 
     except Exception as e:
-        print(f"Error generating puzzles for job {job_id}: {e}")
+        logger.error("Error generating puzzles for job %s: %s", job_id, e)
         _update_status(job_id, "failed", error_message=f"Puzzle generation error: {str(e)}")
         raise
 
 
-# ---------------------------------------------------------------------------
 # Puzzle generation
-# ---------------------------------------------------------------------------
-
 def _generate_puzzles(games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Run Stockfish over game list and return puzzle dicts."""
     all_puzzles: List[Dict[str, Any]] = []
@@ -101,7 +102,7 @@ def _generate_puzzles(games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             all_puzzles.extend(puzzles[:remaining])
 
             if (i + 1) % 10 == 0:
-                print(f"  Analysed {i + 1}/{len(games)} games, {len(all_puzzles)} puzzles so far")
+                logger.info("Analysed %d/%d games, %d puzzles so far", i + 1, len(games), len(all_puzzles))
     finally:
         engine.quit()
 
@@ -148,7 +149,7 @@ def _puzzles_from_pgn(
         return puzzles
 
     except Exception as e:
-        print(f"Error processing game: {e}")
+        logger.error("Error processing game: %s", e)
         return []
 
 
@@ -250,10 +251,7 @@ def _estimate_rating(eval_swing: int, solution_length: int) -> int:
     return max(800, min(2500, rating))
 
 
-# ---------------------------------------------------------------------------
 # EC2 API callbacks
-# ---------------------------------------------------------------------------
-
 def _ingest_puzzles(job_id: str, puzzles: List[Dict[str, Any]], total_games: int) -> None:
     """POST generated puzzles to the EC2 ingest endpoint."""
     payload = {"puzzles": puzzles, "total_games": total_games}
@@ -264,7 +262,7 @@ def _ingest_puzzles(job_id: str, puzzles: List[Dict[str, Any]], total_games: int
             headers={"Authorization": f"Bearer {LAMBDA_SECRET}"},
         )
         resp.raise_for_status()
-    print(f"Ingested {len(puzzles)} puzzles for job {job_id}")
+    logger.info("Ingested %d puzzles for job %s", len(puzzles), job_id)
 
 
 def _update_status(
@@ -284,4 +282,4 @@ def _update_status(
                 headers={"Authorization": f"Bearer {LAMBDA_SECRET}"},
             )
     except Exception as e:
-        print(f"Warning: failed to update status to '{status}': {e}")
+        logger.warning("Failed to update status to '%s': %s", status, e)

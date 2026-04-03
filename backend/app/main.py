@@ -1,5 +1,6 @@
 """FastAPI main application."""
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 import boto3
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Header
@@ -18,6 +19,8 @@ from schemas import (
 from config import settings
 from job_queue import queue
 from rate_limiter import rate_limiter
+
+logger = logging.getLogger(__name__)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -135,11 +138,11 @@ def create_job(
                 Payload=json.dumps(queue_data).encode(),
             )
         except Exception as e:
-            print(f"Warning: Failed to invoke ETL Lambda for job {new_job.id}: {e}")
+            logger.warning("Failed to invoke ETL Lambda for job %s: %s", new_job.id, e)
     else:
         queue_success = queue.push(str(new_job.id), queue_data)
         if not queue_success:
-            print(f"Warning: Failed to push job {new_job.id} to queue")
+            logger.warning("Failed to push job %s to queue", new_job.id)
 
     return new_job
 

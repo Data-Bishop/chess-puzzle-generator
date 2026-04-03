@@ -8,6 +8,7 @@ Environment variables (set by Terraform):
     LAMBDA_PUZZLES_ARN — ARN of the Puzzle Generator Lambda to invoke
 """
 import json
+import logging
 import os
 import random
 import time
@@ -16,6 +17,9 @@ from typing import Any, Dict, List, Optional
 
 import boto3
 import httpx
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 EC2_API_URL = os.environ["EC2_API_URL"]
 LAMBDA_SECRET = os.environ["LAMBDA_SECRET"]
@@ -61,7 +65,7 @@ def handler(event, context):
         # Cap the number of games to keep analysis time reasonable
         if len(games) > MAX_GAMES_TO_SAMPLE:
             games = random.sample(games, MAX_GAMES_TO_SAMPLE)
-            print(f"Sampled {MAX_GAMES_TO_SAMPLE} games from total fetched")
+            logger.info("Sampled %d games from total fetched", MAX_GAMES_TO_SAMPLE)
 
         # Store game data in S3 (auto-deleted after 1 hour via lifecycle rule)
         s3_key = f"{job_id}/games.json"
@@ -71,7 +75,7 @@ def handler(event, context):
             Body=json.dumps(games),
             ContentType="application/json",
         )
-        print(f"Stored {len(games)} games in s3://{S3_BUCKET}/{s3_key}")
+        logger.info("Stored %d games in s3://%s/%s", len(games), S3_BUCKET, s3_key)
 
         # Tell the EC2 API that we're now generating puzzles
         _update_status(job_id, "generating_puzzles", total_games=len(games))
@@ -87,7 +91,7 @@ def handler(event, context):
                 "total_games": len(games),
             }),
         )
-        print(f"Invoked puzzle generator Lambda for job {job_id}")
+        logger.info("Invoked puzzle generator Lambda for job %s", job_id)
 
         return {"statusCode": 200, "body": json.dumps({"ok": True, "games": len(games)})}
 
@@ -96,15 +100,12 @@ def handler(event, context):
         _update_status(job_id, "failed", error_message=str(e))
         return {"statusCode": 200}
     except Exception as e:
-        print(f"Unhandled error for job {job_id}: {e}")
+        logger.error("Unhandled error for job %s: %s", job_id, e)
         _update_status(job_id, "failed", error_message=f"ETL error: {str(e)}")
         raise
 
 
-# ---------------------------------------------------------------------------
 # Chess.com API helpers
-# ---------------------------------------------------------------------------
-
 def _fetch_games(
     username: str,
     time_control: Optional[str],
@@ -148,7 +149,7 @@ def _fetch_games(
                 all_games.extend(games)
                 time.sleep(0.1)  # courtesy delay for Chess.com API
             except Exception as e:
-                print(f"Warning: failed to fetch {archive_url}: {e}")
+                logger.warning("Failed to fetch %s: %s", archive_url, e)
                 continue
 
         return all_games
@@ -178,10 +179,7 @@ def _filter_archives_by_date(
     return filtered
 
 
-# ---------------------------------------------------------------------------
 # EC2 API callback helper
-# ---------------------------------------------------------------------------
-
 def _update_status(
     job_id: str,
     status: str,
@@ -204,4 +202,4 @@ def _update_status(
             )
     except Exception as e:
         # Don't let a callback failure crash the Lambda
-        print(f"Warning: failed to update job status to '{status}': {e}")
+        logger.warning("Failed to update job status to '%s': %s", status, e)

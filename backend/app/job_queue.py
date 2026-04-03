@@ -1,8 +1,11 @@
 """Redis queue management for job processing."""
 import json
+import logging
 import redis
 from typing import Optional, Dict, Any
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RedisQueue:
@@ -39,7 +42,7 @@ class RedisQueue:
             )
             return True
         except Exception as e:
-            print(f"Error pushing job to queue: {e}")
+            logger.error("Error pushing job to queue: %s", e)
             return False
 
     def pop(self, timeout: int = 0) -> Optional[tuple[str, Dict[str, Any]]]:
@@ -69,18 +72,18 @@ class RedisQueue:
                 job_data_json = self.redis_client.get(f"job:{job_id}")
                 if job_data_json:
                     break
-                print(f"Retry {attempt + 1}: Job data not found for job {job_id}, waiting...")
+                logger.warning("Retry %d: job data not found for job %s, waiting...", attempt + 1, job_id)
                 time_module.sleep(0.5)
 
             if not job_data_json:
-                print(f"Warning: Job data not found for job {job_id} after retries")
+                logger.warning("Job data not found for job %s after retries", job_id)
                 return None
 
             job_data = json.loads(job_data_json)
             return (job_id, job_data)
 
         except Exception as e:
-            print(f"Error popping job from queue: {e}")
+            logger.error("Error popping job from queue: %s", e)
             return None
 
     def get_queue_length(self) -> int:
@@ -93,7 +96,7 @@ class RedisQueue:
         try:
             return self.redis_client.llen(self.queue_name)
         except Exception as e:
-            print(f"Error getting queue length: {e}")
+            logger.error("Error getting queue length: %s", e)
             return 0
 
     def clear_queue(self) -> bool:
@@ -107,7 +110,7 @@ class RedisQueue:
             self.redis_client.delete(self.queue_name)
             return True
         except Exception as e:
-            print(f"Error clearing queue: {e}")
+            logger.error("Error clearing queue: %s", e)
             return False
 
     def health_check(self) -> bool:
@@ -121,7 +124,7 @@ class RedisQueue:
             self.redis_client.ping()
             return True
         except Exception as e:
-            print(f"Redis health check failed: {e}")
+            logger.error("Redis health check failed: %s", e)
             return False
 
 

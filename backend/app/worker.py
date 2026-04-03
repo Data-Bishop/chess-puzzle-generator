@@ -4,15 +4,19 @@ import sys
 import time
 import signal
 import random
+import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, List
 
+from logging_config import configure_logging
 from job_queue import queue
 from chesscom_client import ChessComClient
 from puzzle_generator import PuzzleGenerator, Puzzle as PuzzleData
 from database import SessionLocal
 from models import Job, Puzzle
+
+logger = logging.getLogger(__name__)
 
 
 class GameExtractionWorker:
@@ -40,7 +44,7 @@ class GameExtractionWorker:
 
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals."""
-        print("\nReceived shutdown signal. Finishing current job...")
+        logger.info("Received shutdown signal. Finishing current job...")
         self.running = False
 
     def _start_cleanup_scheduler(self):
@@ -57,7 +61,7 @@ class GameExtractionWorker:
                 try:
                     self._cleanup_expired_data()
                 except Exception as e:
-                    print(f"Error in cleanup: {e}")
+                    logger.error("Error in cleanup: %s", e)
 
                 # Sleep in small increments to allow quick shutdown
                 for _ in range(self.CLEANUP_INTERVAL_SECONDS):
@@ -67,13 +71,13 @@ class GameExtractionWorker:
 
         self.cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
         self.cleanup_thread.start()
-        print("Started puzzle cleanup scheduler (runs every hour)")
+        logger.info("Started puzzle cleanup scheduler (runs every hour)")
 
     def _cleanup_expired_data(self):
         """Delete expired puzzles and old empty jobs."""
         db = SessionLocal()
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             # Delete expired puzzles
             expired_puzzles = db.query(Puzzle).filter(
@@ -90,18 +94,18 @@ class GameExtractionWorker:
             db.commit()
 
             if expired_puzzles > 0 or old_empty_jobs > 0:
-                print(f"[Cleanup] Deleted {expired_puzzles} expired puzzles, {old_empty_jobs} old empty jobs")
+                logger.info("Cleanup: deleted %d expired puzzles, %d old empty jobs", expired_puzzles, old_empty_jobs)
 
         except Exception as e:
-            print(f"Error during cleanup: {e}")
+            logger.error("Error during cleanup: %s", e)
             db.rollback()
         finally:
             db.close()
 
     def run(self):
         """Main worker loop."""
-        print("Game Extraction Worker started")
-        print("Waiting for jobs from Redis queue...")
+        logger.info("Game Extraction Worker started")
+        logger.info("Waiting for jobs from Redis queue...")
 
         while self.running:
             try:
@@ -113,19 +117,16 @@ class GameExtractionWorker:
                     continue
 
                 job_id, job_data = result
-                print(f"\n{'='*60}")
-                print(f"Processing job: {job_id}")
-                print(f"Username: {job_data.get('username')}")
-                print(f"{'='*60}")
+                logger.info("Processing job %s (username: %s)", job_id, job_data.get("username"))
 
                 # Process the job
                 self.process_job(job_id, job_data)
 
             except KeyboardInterrupt:
-                print("\nShutting down...")
+                logger.info("Shutting down...")
                 break
             except Exception as e:
-                print(f"Error in worker loop: {e}")
+                logger.error("Error in worker loop: %s", e)
                 time.sleep(1)  # Avoid tight loop on persistent errors
 
         # Cleanup
@@ -155,7 +156,7 @@ class GameExtractionWorker:
             time_control = job_data.get("time_control")
 
             # Fetch games from Chess.com
-            print(f"Fetching games for user: {username}")
+            logger.info("Fetching games for user: %s", username)
 
             if date_from or date_to:
                 games = self.chess_client.get_games_by_date_range(
@@ -169,7 +170,7 @@ class GameExtractionWorker:
                     time_control=time_control
                 )
 
-            print(f"Fetched {len(games)} games")
+            logger.info("Fetched %d games", len(games))
 
             if not games:
                 self._update_job_status(
@@ -191,17 +192,17 @@ class GameExtractionWorker:
             games_to_analyze = games
             if len(games) > self.MAX_GAMES_TO_ANALYZE:
                 games_to_analyze = random.sample(games, self.MAX_GAMES_TO_ANALYZE)
-                print(f"Sampled {self.MAX_GAMES_TO_ANALYZE} games from {len(games)} for analysis")
+                logger.info("Sampled %d games from %d for analysis", self.MAX_GAMES_TO_ANALYZE, len(games))
 
             # Generate puzzles from games
-            print(f"Generating puzzles from {len(games_to_analyze)} games...")
+            logger.info("Generating puzzles from %d games...", len(games_to_analyze))
             puzzles = self.puzzle_generator.generate_puzzles_from_games(
                 games_to_analyze,
                 max_puzzles_per_game=self.MAX_PUZZLES_PER_GAME,
                 max_total_puzzles=self.MAX_TOTAL_PUZZLES
             )
 
-            print(f"Generated {len(puzzles)} puzzles")
+            logger.info("Generated %d puzzles", len(puzzles))
 
             # Store puzzles in database
             if puzzles:
@@ -215,17 +216,14 @@ class GameExtractionWorker:
                 total_puzzles=len(puzzles)
             )
 
-            print(f"Job {job_id} completed successfully")
-            print(f"Total games: {len(games)}, Total puzzles: {len(puzzles)}")
+            logger.info("Job %s completed — games: %d, puzzles: %d", job_id, len(games), len(puzzles))
 
         except ValueError as e:
-            # User not found or invalid input
-            print(f"Validation error: {e}")
+            logger.warning("Validation error for job %s: %s", job_id, e)
             self._update_job_status(job_id, "failed", error=str(e))
 
         except Exception as e:
-            # Unexpected error
-            print(f"Error processing job {job_id}: {e}")
+            logger.error("Error processing job %s: %s", job_id, e)
             self._update_job_status(
                 job_id, "failed", error=f"Unexpected error: {str(e)}"
             )
@@ -253,7 +251,7 @@ class GameExtractionWorker:
             job = db.query(Job).filter(Job.id == job_id).first()
 
             if not job:
-                print(f"Warning: Job {job_id} not found in database")
+                logger.warning("Job %s not found in database", job_id)
                 return
 
             job.status = status
@@ -264,13 +262,13 @@ class GameExtractionWorker:
                 job.error_message = error
 
             if status in ["completed", "failed"]:
-                job.completed_at = datetime.utcnow()
+                job.completed_at = datetime.now(timezone.utc)
 
             db.commit()
-            print(f"Updated job status to: {status}")
+            logger.info("Job %s status → %s", job_id, status)
 
         except Exception as e:
-            print(f"Error updating job status: {e}")
+            logger.error("Error updating job status: %s", e)
             db.rollback()
         finally:
             db.close()
@@ -285,7 +283,7 @@ class GameExtractionWorker:
         """
         db = SessionLocal()
         try:
-            expires_at = datetime.utcnow() + timedelta(hours=24)
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
 
             for puzzle_data in puzzles:
                 puzzle = Puzzle(
@@ -300,10 +298,10 @@ class GameExtractionWorker:
                 db.add(puzzle)
 
             db.commit()
-            print(f"Stored {len(puzzles)} puzzles in database")
+            logger.info("Stored %d puzzles in database", len(puzzles))
 
         except Exception as e:
-            print(f"Error storing puzzles: {e}")
+            logger.error("Error storing puzzles: %s", e)
             db.rollback()
         finally:
             db.close()
@@ -319,21 +317,21 @@ class GameExtractionWorker:
 
     def cleanup(self):
         """Cleanup resources."""
-        print("Cleaning up worker resources...")
+        logger.info("Cleaning up worker resources...")
         self.chess_client.close()
         self.puzzle_generator.close()
-        print("Worker stopped")
+        logger.info("Worker stopped")
 
 
 def main():
     """Entry point for worker."""
-    print("Starting Chess Puzzle Generator Worker")
-    print(f"Python version: {sys.version}")
-    print(f"Working directory: {os.getcwd()}")
+    configure_logging()
+    logger.info("Starting Chess Puzzle Generator Worker")
+    logger.info("Python version: %s", sys.version.split()[0])
+    logger.info("Working directory: %s", os.getcwd())
 
-    # Check environment
     redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
-    print(f"Redis URL: {redis_url}")
+    logger.info("Redis URL: %s", redis_url)
 
     # Start worker
     worker = GameExtractionWorker()
@@ -341,7 +339,7 @@ def main():
     try:
         worker.run()
     except Exception as e:
-        print(f"Fatal error: {e}")
+        logger.critical("Fatal error: %s", e)
         sys.exit(1)
 
 

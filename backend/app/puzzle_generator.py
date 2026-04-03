@@ -1,11 +1,14 @@
 """Puzzle generator using Stockfish for position analysis."""
 import os
+import logging
 import chess
 import chess.pgn
 import chess.engine
 from io import StringIO
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -128,7 +131,7 @@ class PuzzleGenerator:
             return puzzles
 
         except Exception as e:
-            print(f"Error generating puzzles: {e}")
+            logger.error("Error generating puzzles: %s", e)
             return []
 
     def generate_puzzles_from_games(
@@ -173,7 +176,7 @@ class PuzzleGenerator:
                 all_puzzles.extend(puzzles[:remaining])
 
                 if (i + 1) % 10 == 0:
-                    print(f"  Analyzed {i + 1}/{len(games)} games, {len(all_puzzles)} puzzles so far")
+                    logger.info("Analyzed %d/%d games, %d puzzles so far", i + 1, len(games), len(all_puzzles))
 
         finally:
             self._stop_engine()
@@ -211,7 +214,7 @@ class PuzzleGenerator:
             return cp_score.score()
 
         except Exception as e:
-            print(f"Error evaluating position: {e}")
+            logger.error("Error evaluating position: %s", e)
             return None
 
     def _create_puzzle(
@@ -263,7 +266,7 @@ class PuzzleGenerator:
             )
 
         except Exception as e:
-            print(f"Error creating puzzle: {e}")
+            logger.error("Error creating puzzle: %s", e)
             return None
 
     def _detect_theme(self, board: chess.Board, move: chess.Move) -> str:
@@ -379,39 +382,3 @@ class PuzzleGenerator:
     def close(self):
         """Close the Stockfish engine."""
         self._stop_engine()
-
-
-# Test the puzzle generator
-if __name__ == "__main__":
-    # Sample PGN for testing - Opera Game (Morphy vs Duke/Count, 1858)
-    test_pgn = """
-[Event "Paris"]
-[Site "Paris"]
-[Date "1858.??.??"]
-[White "Morphy, Paul"]
-[Black "Duke Karl / Count Isouard"]
-[Result "1-0"]
-
-1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7
-8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7
-14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8# 1-0
-"""
-
-    print("Testing Puzzle Generator...")
-    generator = PuzzleGenerator()
-
-    try:
-        puzzles = generator.generate_puzzles_from_pgn(test_pgn, max_puzzles=3)
-        print(f"\nFound {len(puzzles)} puzzles:")
-
-        for i, puzzle in enumerate(puzzles, 1):
-            print(f"\nPuzzle {i}:")
-            print(f"  FEN: {puzzle.fen}")
-            print(f"  Solution: {puzzle.solution}")
-            print(f"  Theme: {puzzle.theme}")
-            print(f"  Rating: {puzzle.rating}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        generator.close()

@@ -1,8 +1,11 @@
 """Chess.com API client for fetching player games."""
 import httpx
+import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class ChessComClient:
@@ -116,7 +119,7 @@ class ChessComClient:
                 time.sleep(0.1)
 
             except Exception as e:
-                print(f"Warning: Failed to fetch {archive_url}: {e}")
+                logger.warning("Failed to fetch %s: %s", archive_url, e)
                 continue
 
         return all_games
@@ -164,7 +167,7 @@ class ChessComClient:
                 time.sleep(0.1)
 
             except Exception as e:
-                print(f"Warning: Failed to fetch {archive_url}: {e}")
+                logger.warning("Failed to fetch %s: %s", archive_url, e)
                 continue
 
         return all_games
@@ -235,27 +238,3 @@ class ChessComClient:
     def close(self):
         """Close HTTP client."""
         self.client.close()
-
-
-# Example usage and testing
-if __name__ == "__main__":
-    client = ChessComClient()
-
-    try:
-        # Test: Get recent games for a player
-        print("Fetching recent games for 'hikaru'...")
-        games = client.get_recent_games("hikaru", max_archives=1)
-        print(f"Found {len(games)} games")
-
-        if games:
-            game = games[0]
-            print(f"\nSample game:")
-            print(f"  White: {game.get('white', {}).get('username')}")
-            print(f"  Black: {game.get('black', {}).get('username')}")
-            print(f"  Time control: {game.get('time_class')}")
-            print(f"  Result: {game.get('white', {}).get('result')}")
-
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        client.close()
