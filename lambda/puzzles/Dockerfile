@@ -4,10 +4,10 @@ FROM public.ecr.aws/lambda/python:3.12
 RUN dnf install -y tar && dnf clean all
 
 RUN curl -fsSL \
-    "https://github.com/official-stockfish/Stockfish/releases/download/sf_17/stockfish-ubuntu-x86-64-avx2.tar" \
+    "https://github.com/official-stockfish/Stockfish/releases/download/sf_17/stockfish-ubuntu-x86-64.tar" \
     -o /tmp/stockfish.tar \
     && tar -xf /tmp/stockfish.tar -C /tmp \
-    && mv /tmp/stockfish/stockfish-ubuntu-x86-64-avx2 /usr/local/bin/stockfish \
+    && mv /tmp/stockfish/stockfish-ubuntu-x86-64 /usr/local/bin/stockfish \
     && chmod +x /usr/local/bin/stockfish \
     && rm -rf /tmp/stockfish /tmp/stockfish.tar
 
