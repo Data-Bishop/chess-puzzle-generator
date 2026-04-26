@@ -83,7 +83,7 @@ def _generate_puzzles(games: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Run Stockfish over game list and return puzzle dicts."""
     all_puzzles: List[Dict[str, Any]] = []
 
-    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
+    engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH, timeout=60)
     engine.configure({"Threads": 1, "Hash": 64})
 
     try:
