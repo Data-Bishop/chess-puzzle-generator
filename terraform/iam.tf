@@ -126,7 +126,7 @@ resource "aws_iam_role_policy" "ec2" {
         Sid      = "DecryptSSMSecureStrings"
         Effect   = "Allow"
         Action   = ["kms:Decrypt"]
-        Resource = "arn:aws:kms:${var.aws_region}:*:key/aws/ssm"
+        Resource = "*"
       }
     ]
   })

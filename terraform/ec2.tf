@@ -135,6 +135,14 @@ ENVEOF
     Name    = var.project_name
     Project = var.project_name
   }
+
+  # Ensure SSM parameters exist before the instance boots so user_data
+  # can fetch them successfully on first startup.
+  depends_on = [
+    aws_ssm_parameter.db_password,
+    aws_ssm_parameter.lambda_secret,
+    aws_ssm_parameter.lambda_etl_arn,
+  ]
 }
 
 # Elastic IP
