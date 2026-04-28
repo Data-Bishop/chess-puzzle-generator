@@ -101,11 +101,16 @@ resource "aws_instance" "ec2" {
       --output text \
       --region "$REGION")
 
-    LAMBDA_ETL_ARN=$(aws ssm get-parameter \
-      --name "$SSM_PREFIX/lambda_etl_arn" \
-      --query "Parameter.Value" \
-      --output text \
-      --region "$REGION")
+    # lambda_etl_arn is created after this instance due to a dependency cycle
+    # (ETL Lambda needs the EIP; EIP needs this instance). Retry until it appears.
+    for i in $(seq 1 10); do
+      LAMBDA_ETL_ARN=$(aws ssm get-parameter \
+        --name "$SSM_PREFIX/lambda_etl_arn" \
+        --query "Parameter.Value" \
+        --output text \
+        --region "$REGION" 2>/dev/null) && break
+      sleep 30
+    done
 
     # Write .env file
     cat > /home/ec2-user/app/.env <<ENVEOF
@@ -138,10 +143,12 @@ ENVEOF
 
   # Ensure SSM parameters exist before the instance boots so user_data
   # can fetch them successfully on first startup.
+  # Ensure secrets exist before the instance boots so user_data can fetch them.
+  # lambda_etl_arn is excluded — it depends on the EIP which depends on this
+  # instance, creating a cycle. user_data retries that param until it appears.
   depends_on = [
     aws_ssm_parameter.db_password,
     aws_ssm_parameter.lambda_secret,
-    aws_ssm_parameter.lambda_etl_arn,
   ]
 }
 
