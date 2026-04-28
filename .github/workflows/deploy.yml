@@ -1,8 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
     branches: [main]
+    types: [completed]
 
 permissions:
   id-token: write  # required for OIDC authentication with AWS
@@ -13,9 +15,12 @@ jobs:
     name: Deploy to AWS
     runs-on: ubuntu-latest
     environment: production
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -51,7 +56,7 @@ jobs:
           TF_VAR_s3_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
           TF_VAR_lambda_secret: ${{ secrets.LAMBDA_SECRET }}
           TF_VAR_app_repo_url: ${{ vars.APP_REPO_URL }}
-          TF_VAR_puzzles_image_tag: ${{ github.sha }}
+          TF_VAR_puzzles_image_tag: ${{ github.event.workflow_run.head_sha }}
 
       - name: Log in to ECR
         id: ecr-login
@@ -64,7 +69,7 @@ jobs:
           platforms: linux/amd64
           push: true
           provenance: false
-          tags: ${{ steps.ecr-login.outputs.registry }}/${{ vars.PROJECT_NAME }}-puzzle-generator:${{ github.sha }}
+          tags: ${{ steps.ecr-login.outputs.registry }}/${{ vars.PROJECT_NAME }}-puzzle-generator:${{ github.event.workflow_run.head_sha }}
 
       - name: Build ETL Lambda zip
         run: |
@@ -85,4 +90,4 @@ jobs:
           TF_VAR_s3_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
           TF_VAR_lambda_secret: ${{ secrets.LAMBDA_SECRET }}
           TF_VAR_app_repo_url: ${{ vars.APP_REPO_URL }}
-          TF_VAR_puzzles_image_tag: ${{ github.sha }}
+          TF_VAR_puzzles_image_tag: ${{ github.event.workflow_run.head_sha }}

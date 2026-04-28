@@ -149,6 +149,8 @@ resource "aws_iam_role_policy" "github_deploy" {
           "ecr:PutImage",
           "ecr:ListImages",
           "ecr:BatchDeleteImage",
+          "ecr:TagResource",
+          "ecr:UntagResource",
         ]
         Resource = "*"
       },
