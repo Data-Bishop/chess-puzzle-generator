@@ -128,7 +128,18 @@ resource "aws_iam_role_policy" "github_deploy" {
         Sid    = "ECR"
         Effect = "Allow"
         Action = [
+          # Auth
           "ecr:GetAuthorizationToken",
+          # Repository management (used by Terraform)
+          "ecr:CreateRepository",
+          "ecr:DeleteRepository",
+          "ecr:DescribeRepositories",
+          "ecr:PutLifecyclePolicy",
+          "ecr:GetLifecyclePolicy",
+          "ecr:SetRepositoryPolicy",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DeleteRepositoryPolicy",
+          # Image push/pull
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
@@ -136,6 +147,8 @@ resource "aws_iam_role_policy" "github_deploy" {
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload",
           "ecr:PutImage",
+          "ecr:ListImages",
+          "ecr:BatchDeleteImage",
         ]
         Resource = "*"
       },
