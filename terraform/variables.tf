@@ -27,6 +27,12 @@ variable "lambda_secret" {
   sensitive   = true
 }
 
+variable "db_password" {
+  description = "PostgreSQL password for the chess_puzzles database"
+  type        = string
+  sensitive   = true
+}
+
 variable "app_repo_url" {
   description = "Git URL of the application repository cloned onto the EC2 instance"
   type        = string

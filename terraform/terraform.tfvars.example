@@ -8,8 +8,12 @@ ec2_instance_type = "t3.small"
 # Must be globally unique across all AWS accounts
 s3_bucket_name    = "chess-puzzle-generator-games-<your-aws-account-id>"
 
-# Must match LAMBDA_SECRET in your EC2 .env file
-lambda_secret     = "<same value as LAMBDA_SECRET in .env>"
+# Shared secret between Lambda and EC2 — generate with:
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
+lambda_secret     = "<generate a random hex string>"
+
+# PostgreSQL password for the chess_puzzles database
+db_password       = "<generate a strong password>"
 
 # Git URL of the repo to clone onto the EC2 instance on first boot.
 # Defaults to the upstream repo — override if you are working from a fork.

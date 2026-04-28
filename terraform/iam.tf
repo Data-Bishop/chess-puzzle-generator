@@ -112,6 +112,21 @@ resource "aws_iam_role_policy" "ec2" {
         Effect   = "Allow"
         Action   = ["lambda:InvokeFunction"]
         Resource = aws_lambda_function.etl.arn
+      },
+      {
+        Sid    = "ReadSSMParams"
+        Effect = "Allow"
+        Action = [
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+        ]
+        Resource = "arn:aws:ssm:${var.aws_region}:*:parameter/${var.project_name}/*"
+      },
+      {
+        Sid      = "DecryptSSMSecureStrings"
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = "arn:aws:kms:${var.aws_region}:*:key/aws/ssm"
       }
     ]
   })

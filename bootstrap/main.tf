@@ -232,6 +232,20 @@ resource "aws_iam_role_policy" "github_deploy" {
         Resource = "*"
       },
       {
+        Sid    = "SSM"
+        Effect = "Allow"
+        Action = [
+          "ssm:PutParameter",
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:DeleteParameter",
+          "ssm:DescribeParameters",
+          "ssm:ListTagsForResource",
+          "ssm:AddTagsToResource",
+        ]
+        Resource = "*"
+      },
+      {
         Sid    = "DynamoDB"
         Effect = "Allow"
         Action = [

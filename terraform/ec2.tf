@@ -56,6 +56,7 @@ resource "aws_instance" "ec2" {
 
   user_data = <<-EOF
     #!/bin/bash
+    set -euo pipefail
     yum update -y
     yum install -y docker git
 
@@ -81,6 +82,53 @@ resource "aws_instance" "ec2" {
     # Clone application repo
     git clone ${var.app_repo_url} /home/ec2-user/app
     chown -R ec2-user:ec2-user /home/ec2-user/app
+
+    # Fetch secrets from SSM Parameter Store
+    SSM_PREFIX="/${var.project_name}"
+    REGION="${var.aws_region}"
+
+    DB_PASSWORD=$(aws ssm get-parameter \
+      --name "$SSM_PREFIX/db_password" \
+      --with-decryption \
+      --query "Parameter.Value" \
+      --output text \
+      --region "$REGION")
+
+    LAMBDA_SECRET=$(aws ssm get-parameter \
+      --name "$SSM_PREFIX/lambda_secret" \
+      --with-decryption \
+      --query "Parameter.Value" \
+      --output text \
+      --region "$REGION")
+
+    LAMBDA_ETL_ARN=$(aws ssm get-parameter \
+      --name "$SSM_PREFIX/lambda_etl_arn" \
+      --query "Parameter.Value" \
+      --output text \
+      --region "$REGION")
+
+    # Write .env file
+    cat > /home/ec2-user/app/.env <<ENVEOF
+POSTGRES_USER=databishop
+POSTGRES_PASSWORD=$DB_PASSWORD
+POSTGRES_DB=chess_puzzles
+DATABASE_URL=postgresql://databishop:$DB_PASSWORD@postgres:5432/chess_puzzles
+REDIS_URL=redis://redis:6379/0
+API_HOST=0.0.0.0
+API_PORT=8000
+ENVIRONMENT=production
+CHESS_COM_API_BASE_URL=https://api.chess.com/pub
+WORKER_MODE=lambda
+LAMBDA_SECRET=$LAMBDA_SECRET
+AWS_REGION=${var.aws_region}
+LAMBDA_ETL_ARN=$LAMBDA_ETL_ARN
+ENVEOF
+
+    chown ec2-user:ec2-user /home/ec2-user/app/.env
+    chmod 600 /home/ec2-user/app/.env
+
+    # Start the application stack
+    runuser -l ec2-user -c "cd /home/ec2-user/app && docker-compose up -d"
   EOF
 
   tags = {
