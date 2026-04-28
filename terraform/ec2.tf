@@ -71,8 +71,15 @@ resource "aws_instance" "ec2" {
     chmod +x /usr/local/bin/docker-compose
     ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 
+    # Install Docker Buildx (bundled version is too old for docker-compose v2)
+    mkdir -p /usr/local/lib/docker/cli-plugins
+    curl -fsSL \
+      "https://github.com/docker/buildx/releases/download/v0.33.0/buildx-v0.33.0.linux-amd64" \
+      -o /usr/local/lib/docker/cli-plugins/docker-buildx
+    chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+
     # Clone application repo
-    git clone https://github.com/Data-Bishop/chess-puzzle-generator.git /home/ec2-user/app
+    git clone ${var.app_repo_url} /home/ec2-user/app
     chown -R ec2-user:ec2-user /home/ec2-user/app
   EOF
 

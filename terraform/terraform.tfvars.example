@@ -6,7 +6,11 @@ project_name      = "chess-puzzle-generator"
 ec2_instance_type = "t3.small"
 
 # Must be globally unique across all AWS accounts
-s3_bucket_name    = "chess-puzzle-generator-games-238845559191"
+s3_bucket_name    = "chess-puzzle-generator-games-<your-aws-account-id>"
 
 # Must match LAMBDA_SECRET in your EC2 .env file
 lambda_secret     = "<same value as LAMBDA_SECRET in .env>"
+
+# Git URL of the repo to clone onto the EC2 instance on first boot.
+# Defaults to the upstream repo — override if you are working from a fork.
+# app_repo_url = "https://github.com/your-username/chess-puzzle-generator.git"

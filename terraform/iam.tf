@@ -72,9 +72,9 @@ resource "aws_iam_role_policy" "puzzles_lambda" {
         Resource = "arn:aws:logs:*:*:*"
       },
       {
-        Sid    = "S3ReadDelete"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:DeleteObject"]
+        Sid      = "S3ReadDelete"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:DeleteObject"]
         Resource = "${aws_s3_bucket.games.arn}/*"
       }
     ]

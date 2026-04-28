@@ -26,3 +26,14 @@ variable "lambda_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "app_repo_url" {
+  description = "Git URL of the application repository cloned onto the EC2 instance"
+  type        = string
+  default     = "https://github.com/Data-Bishop/chess-puzzle-generator.git"
+}
+
+variable "puzzles_image_tag" {
+  description = "Tag of the puzzle generator container image in ECR (set by CD workflow to the git SHA)"
+  type        = string
+}

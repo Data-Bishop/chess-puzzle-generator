@@ -1,0 +1,88 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write  # required for OIDC authentication with AWS
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="key=chess-puzzle-generator/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      # Create the ECR repository first so the Docker push step has somewhere to push to.
+      # On subsequent deploys this is a no-op.
+      - name: Ensure ECR repository exists
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve \
+            -target=aws_ecr_repository.puzzles \
+            -target=aws_ecr_lifecycle_policy.puzzles \
+            -target=aws_ecr_repository_policy.puzzles
+        env:
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
+          TF_VAR_ec2_instance_type: ${{ vars.EC2_INSTANCE_TYPE }}
+          TF_VAR_s3_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
+          TF_VAR_lambda_secret: ${{ secrets.LAMBDA_SECRET }}
+          TF_VAR_app_repo_url: ${{ vars.APP_REPO_URL }}
+          TF_VAR_puzzles_image_tag: ${{ github.sha }}
+
+      - name: Log in to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push puzzle generator image
+        uses: docker/build-push-action@v6
+        with:
+          context: lambda/puzzles
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ steps.ecr-login.outputs.registry }}/${{ vars.PROJECT_NAME }}-puzzle-generator:${{ github.sha }}
+
+      - name: Build ETL Lambda zip
+        run: |
+          mkdir -p terraform/builds/etl
+          pip install \
+            -r lambda/etl/requirements.txt \
+            -t terraform/builds/etl/ \
+            --quiet --upgrade
+          cp lambda/etl/handler.py terraform/builds/etl/
+
+      - name: Terraform apply
+        working-directory: terraform
+        run: terraform apply -auto-approve
+        env:
+          TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+          TF_VAR_project_name: ${{ vars.PROJECT_NAME }}
+          TF_VAR_ec2_instance_type: ${{ vars.EC2_INSTANCE_TYPE }}
+          TF_VAR_s3_bucket_name: ${{ secrets.S3_BUCKET_NAME }}
+          TF_VAR_lambda_secret: ${{ secrets.LAMBDA_SECRET }}
+          TF_VAR_app_repo_url: ${{ vars.APP_REPO_URL }}
+          TF_VAR_puzzles_image_tag: ${{ github.sha }}

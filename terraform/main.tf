@@ -4,8 +4,16 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
   }
   required_version = ">= 1.5"
+
+  # Backend is configured at init time via backend.hcl (locally) or
+  # -backend-config flags (CI). See bootstrap/ for setup instructions.
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -41,7 +49,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "games" {
     id     = "expire-game-data"
     status = "Enabled"
 
-    filter {}  # apply to all objects in the bucket
+    filter {} # apply to all objects in the bucket
 
     expiration {
       days = 1

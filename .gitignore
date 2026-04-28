@@ -40,3 +40,4 @@ terraform.tfstate.backup
 *.tfvars
 !*.tfvars.example
 terraform/builds/
+backend.hcl

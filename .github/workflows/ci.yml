@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   push:
@@ -72,3 +72,25 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+  terraform-validate:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform format check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: Terraform validate
+        run: terraform validate
