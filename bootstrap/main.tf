@@ -179,33 +179,51 @@ resource "aws_iam_role_policy" "github_deploy" {
         Resource = aws_dynamodb_table.terraform_locks.arn
       },
       {
-        Sid    = "DeployInfra"
+        Sid      = "EC2"
+        Effect   = "Allow"
+        Action   = ["ec2:*"]
+        Resource = "*"
+      },
+      {
+        Sid      = "Lambda"
+        Effect   = "Allow"
+        Action   = ["lambda:*"]
+        Resource = "*"
+      },
+      {
+        # Scoped to project-prefixed roles and instance profiles only
+        Sid    = "IAMProjectScoped"
+        Effect = "Allow"
+        Action = ["iam:*"]
+        Resource = [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-*",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:instance-profile/${var.project_name}-*",
+        ]
+      },
+      {
+        # Read-only IAM needed for Terraform refresh on managed policies
+        Sid    = "IAMReadOnly"
         Effect = "Allow"
         Action = [
-          # EC2
-          "ec2:*",
-          # Lambda
-          "lambda:*",
-          # IAM (scoped to project resources)
-          "iam:CreateRole",
-          "iam:DeleteRole",
-          "iam:GetRole",
-          "iam:PassRole",
-          "iam:AttachRolePolicy",
-          "iam:DetachRolePolicy",
-          "iam:PutRolePolicy",
-          "iam:DeleteRolePolicy",
-          "iam:GetRolePolicy",
-          "iam:CreateInstanceProfile",
-          "iam:DeleteInstanceProfile",
-          "iam:GetInstanceProfile",
-          "iam:AddRoleToInstanceProfile",
-          "iam:RemoveRoleFromInstanceProfile",
-          # S3 (games bucket)
+          "iam:GetPolicy",
+          "iam:GetPolicyVersion",
+          "iam:ListPolicies",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "S3"
+        Effect = "Allow"
+        Action = [
           "s3:CreateBucket",
           "s3:DeleteBucket",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:GetBucketTagging",
+          "s3:PutBucketTagging",
           "s3:GetBucketPolicy",
           "s3:PutBucketPolicy",
+          "s3:DeleteBucketPolicy",
           "s3:GetBucketVersioning",
           "s3:PutBucketVersioning",
           "s3:GetBucketPublicAccessBlock",
@@ -214,15 +232,32 @@ resource "aws_iam_role_policy" "github_deploy" {
           "s3:PutLifecycleConfiguration",
           "s3:GetEncryptionConfiguration",
           "s3:PutEncryptionConfiguration",
-          "s3:ListBucket",
+          "s3:GetBucketAcl",
+          "s3:GetBucketCORS",
+          "s3:GetBucketLogging",
+          "s3:GetBucketRequestPayment",
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetBucketWebsite",
+          "s3:GetAccelerateConfiguration",
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
-          # DynamoDB
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "DynamoDB"
+        Effect = "Allow"
+        Action = [
           "dynamodb:CreateTable",
           "dynamodb:DeleteTable",
           "dynamodb:DescribeTable",
           "dynamodb:UpdateTable",
+          "dynamodb:TagResource",
+          "dynamodb:UntagResource",
+          "dynamodb:ListTagsOfResource",
+          "dynamodb:DescribeTimeToLive",
+          "dynamodb:DescribeContinuousBackups",
         ]
         Resource = "*"
       },
