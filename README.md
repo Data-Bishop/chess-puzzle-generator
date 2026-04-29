@@ -34,7 +34,7 @@ A cloud-native platform that ingests Chess.com game archives, runs batch Stockfi
 | Discipline | What was built |
 |---|---|
 | **Serverless ETL** | Two-stage AWS Lambda pipeline: game extraction (Python 3.12 zip) → Stockfish analysis (container image) |
-| **Infrastructure as Code** | Full Terraform configuration - EC2, Lambda, S3, ECR, SSM, IAM, DynamoDB, Elastic IP |
+| **Infrastructure as Code** | Full Terraform configuration - EC2, Lambda, S3, ECR, SSM, IAM, Elastic IP |
 | **CI/CD** | GitHub Actions - tests on every push, automated deploy on CI pass via OIDC (no static keys) |
 | **Containerisation** | Docker Compose stack (Nginx, FastAPI, PostgreSQL, Redis, Worker) for local parity with production |
 | **Secrets management** | SSM Parameter Store injects secrets into EC2 at boot - zero manual configuration post-deploy |
@@ -64,7 +64,7 @@ A cloud-native platform that ingests Chess.com game archives, runs batch Stockfi
 
 **Cloud & Infrastructure**
 
-![AWS](https://img.shields.io/badge/AWS-Lambda%20·%20EC2%20·%20S3%20·%20ECR%20·%20SSM%20·%20DynamoDB-FF9900?logo=amazonaws&logoColor=white)
+![AWS](https://img.shields.io/badge/AWS-Lambda%20·%20EC2%20·%20S3%20·%20ECR%20·%20SSM-FF9900?logo=amazonaws&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI%2FCD-2088FF?logo=githubactions&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
@@ -175,8 +175,7 @@ Running the full cloud stack in `eu-north-1` at moderate usage (~100 puzzle gene
 | ECR | ~1.5 GB image storage × $0.10/GB | ~$0.15 |
 | S3 (games bucket) | Ephemeral objects, 1-day TTL | ~$0.01 |
 | SSM Parameter Store | 3 standard parameters | $0.00 |
-| DynamoDB (state lock) | On-demand, near-zero traffic | ~$0.01 |
-| **Total** | | **~$15.94/month** |
+| **Total** | | **~$15.93/month** |
 
 > ¹ Combined Lambda usage (~150,000 GB-seconds/month) stays well within the AWS free tier (400,000 GB-seconds + 1M requests/month free, permanently). Lambda costs only begin if usage exceeds ~267 jobs/month for the Puzzle Generator at 3 GB × 8 min per job.
 

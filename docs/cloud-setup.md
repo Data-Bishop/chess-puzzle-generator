@@ -2,7 +2,7 @@
 
 > **End-to-End Platform Engineering of a Serverless ETL Pipeline for Chess Game Analysis and Puzzle Generation on AWS**
 
-This guide covers deploying the project to AWS. The cloud setup replaces the local Docker worker with two AWS Lambda functions — one for game extraction (ETL) and one for Stockfish puzzle generation — while the FastAPI backend and UI continue to run on an EC2 instance behind Nginx.
+This guide covers deploying the project to AWS. The cloud setup replaces the local Docker worker with two AWS Lambda functions - one for game extraction (ETL) and one for Stockfish puzzle generation - while the FastAPI backend and UI continue to run on an EC2 instance behind Nginx.
 
 ---
 
@@ -14,9 +14,9 @@ The deployment is fully automated. Once the one-time bootstrap is complete, ever
 Bootstrap (once)        CI / CD (every push to main)
 ─────────────────       ─────────────────────────────────────────────
 S3 state bucket    →    CI: tests · lint · terraform validate
-DynamoDB lock      →    CD: push image → ECR
-GitHub OIDC        →        terraform apply → all AWS resources
-Deploy IAM role    →        EC2 self-configures via SSM + user_data
+GitHub OIDC        →    CD: push image → ECR
+Deploy IAM role    →        terraform apply → all AWS resources
+                   →        EC2 self-configures via SSM + user_data
 ```
 
 ---
@@ -25,9 +25,9 @@ Deploy IAM role    →        EC2 self-configures via SSM + user_data
 
 | Requirement | Notes |
 |---|---|
-| AWS account | With permissions to create IAM roles, Lambda, EC2, S3, DynamoDB, SSM, ECR |
+| AWS account | With permissions to create IAM roles, Lambda, EC2, S3, SSM, ECR |
 | [AWS CLI v2](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) | Configured with credentials (`aws configure`) |
-| [Terraform >= 1.5](https://developer.hashicorp.com/terraform/install) | Used for bootstrap and reviewed locally |
+| [Terraform >= 1.10](https://developer.hashicorp.com/terraform/install) | Used for bootstrap and reviewed locally |
 | [Git](https://git-scm.com/) | To push the trigger commit |
 | GitHub repository | Must be **public** or have GitHub Actions enabled |
 
@@ -38,8 +38,8 @@ Deploy IAM role    →        EC2 self-configures via SSM + user_data
 | Layer | Service | Role |
 |---|---|---|
 | Compute | EC2 t3.small (Amazon Linux 2023) | Runs Nginx, FastAPI, PostgreSQL, Redis via Docker Compose |
-| Serverless | AWS Lambda (python3.12 zip) | ETL — fetches games from Chess.com, stores to S3 |
-| Serverless | AWS Lambda (container + Stockfish) | Puzzle generation — reads S3, runs Stockfish, callbacks to EC2 |
+| Serverless | AWS Lambda (python3.12 zip) | ETL - fetches games from Chess.com, stores to S3 |
+| Serverless | AWS Lambda (container + Stockfish) | Puzzle generation - reads S3, runs Stockfish, callbacks to EC2 |
 | Storage | S3 | Temporary game data (1-day auto-expiry) |
 | Secrets | SSM Parameter Store | Injects secrets into EC2 at boot |
 | Registry | ECR | Stores the puzzle generator container image |
@@ -48,23 +48,23 @@ Deploy IAM role    →        EC2 self-configures via SSM + user_data
 
 ---
 
-## Step 1 — Bootstrap (One-Time)
+## Step 1 - Bootstrap (One-Time)
 
-The bootstrap creates the resources that Terraform itself needs to operate: a remote state bucket, a state lock table, and the IAM role that GitHub Actions will assume via OIDC. This step is run **once** from your local machine and never again.
+The bootstrap creates the resources that Terraform itself needs to operate: a remote state bucket and the IAM role that GitHub Actions will assume via OIDC. State locking uses S3 native conditional writes - no DynamoDB required. This step is run **once** from your local machine and never again.
 
-### 1.1 — Navigate to the bootstrap directory
+### 1.1 - Navigate to the bootstrap directory
 
 ```bash
 cd bootstrap
 ```
 
-### 1.2 — Initialise Terraform
+### 1.2 - Initialise Terraform
 
 ```bash
 terraform init
 ```
 
-### 1.3 — Review the plan
+### 1.3 - Review the plan
 
 ```bash
 terraform plan
@@ -74,54 +74,52 @@ Bootstrap creates the following resources:
 
 | Resource | Purpose |
 |---|---|
-| `aws_s3_bucket` | Stores Terraform state with versioning and AES-256 encryption |
-| `aws_dynamodb_table` | Prevents concurrent `terraform apply` runs (state locking) |
-| `aws_iam_openid_connect_provider` | Trusts GitHub Actions tokens — no static AWS keys needed |
+| `aws_s3_bucket` | Stores Terraform state with versioning and AES-256 encryption. Native S3 locking (`use_lockfile = true`) handles concurrency - no DynamoDB needed |
+| `aws_iam_openid_connect_provider` | Trusts GitHub Actions tokens - no static AWS keys needed |
 | `aws_iam_role` (github-deploy) | The role GitHub Actions assumes; scoped to project resources only |
 
-> **Note** — If your AWS account already has an OIDC provider for `token.actions.githubusercontent.com`, import it before applying to avoid a conflict:
+> **Note** - If your AWS account already has an OIDC provider for `token.actions.githubusercontent.com`, import it before applying to avoid a conflict:
 > ```bash
 > terraform import aws_iam_openid_connect_provider.github <existing-provider-arn>
 > ```
 
-### 1.4 — Apply
+### 1.4 - Apply
 
 ```bash
 terraform apply
 ```
 
-When it completes, note the outputs — you will need them in the next step.
+When it completes, note the outputs - you will need them in the next step.
 
 ```
 state_bucket_name = "chess-puzzle-generator-tfstate-<account-id>"
-lock_table_name   = "chess-puzzle-generator-terraform-locks"
 deploy_role_arn   = "arn:aws:iam::<account-id>:role/chess-puzzle-generator-github-deploy"
 
 backend_hcl = <<EOT
-  bucket         = "chess-puzzle-generator-tfstate-<account-id>"
-  key            = "chess-puzzle-generator/terraform.tfstate"
-  region         = "eu-north-1"
-  dynamodb_table = "chess-puzzle-generator-terraform-locks"
-  encrypt        = true
+  bucket       = "chess-puzzle-generator-tfstate-<account-id>"
+  key          = "chess-puzzle-generator/terraform.tfstate"
+  region       = "eu-north-1"
+  encrypt      = true
+  use_lockfile = true
 EOT
 ```
 
-### 1.5 — Create `terraform/backend.hcl`
+### 1.5 - Create `terraform/backend.hcl`
 
 Copy the `backend_hcl` output into a new file at `terraform/backend.hcl`. This file is gitignored and only used when running Terraform locally.
 
 ```bash
 # terraform/backend.hcl
-bucket         = "chess-puzzle-generator-tfstate-<account-id>"
-key            = "chess-puzzle-generator/terraform.tfstate"
-region         = "eu-north-1"
-dynamodb_table = "chess-puzzle-generator-terraform-locks"
-encrypt        = true
+bucket       = "chess-puzzle-generator-tfstate-<account-id>"
+key          = "chess-puzzle-generator/terraform.tfstate"
+region       = "eu-north-1"
+encrypt      = true
+use_lockfile = true
 ```
 
 ---
 
-## Step 2 — Configure GitHub Secrets and Variables
+## Step 2 - Configure GitHub Secrets and Variables
 
 The CD workflow reads secrets and variables from a GitHub Actions **`production` environment**. Go to your repository on GitHub:
 
@@ -137,7 +135,6 @@ Then add the following.
 |---|---|---|
 | `AWS_DEPLOY_ROLE_ARN` | From bootstrap output `deploy_role_arn` | IAM role GitHub Actions assumes via OIDC |
 | `TF_STATE_BUCKET` | From bootstrap output `state_bucket_name` | S3 bucket for Terraform state |
-| `TF_LOCK_TABLE` | From bootstrap output `lock_table_name` | DynamoDB table for state locking |
 | `S3_BUCKET_NAME` | Choose a globally unique name e.g. `chess-puzzle-generator-games-<account-id>` | Temporary game storage bucket |
 | `LAMBDA_SECRET` | `python3 -c "import secrets; print(secrets.token_hex(32))"` | Shared secret for Lambda → EC2 callbacks |
 | `DB_PASSWORD` | Any strong password | PostgreSQL password injected via SSM |
@@ -155,7 +152,7 @@ Then add the following.
 
 ---
 
-## Step 3 — Trigger the First Deployment
+## Step 3 - Trigger the First Deployment
 
 With bootstrap complete and GitHub configured, push any change to `main` to trigger the pipeline.
 
@@ -191,14 +188,14 @@ Triggered automatically when CI passes on `main`. Runs in the `production` envir
 ① Checkout code at the exact SHA that passed CI
 ② Configure AWS credentials via OIDC (no static keys)
 ③ Terraform init with S3 backend
-④ Targeted apply — create ECR repository if it doesn't exist yet
+④ Targeted apply - create ECR repository if it doesn't exist yet
 ⑤ Log in to ECR
 ⑥ Build and push puzzle generator Docker image (linux/amd64)
 ⑦ Build ETL Lambda zip (pip install + handler.py)
-⑧ Full terraform apply — provision / update all AWS resources
+⑧ Full terraform apply - provision / update all AWS resources
 ```
 
-> **OIDC authentication** — GitHub Actions assumes the deploy IAM role using a short-lived token. No AWS access keys are stored anywhere.
+> **OIDC authentication** - GitHub Actions assumes the deploy IAM role using a short-lived token. No AWS access keys are stored anywhere.
 
 ---
 
@@ -241,7 +238,7 @@ Triggered automatically when CI passes on `main`. Runs in the `production` envir
 
 ## EC2 Self-Configuration
 
-The EC2 instance configures itself completely on first boot via `user_data.sh` — no manual SSH or SSM commands required. The script:
+The EC2 instance configures itself completely on first boot via `user_data.sh` - no manual SSH or SSM commands required. The script:
 
 1. Installs Docker, Docker Compose, and Docker Buildx
 2. Clones the application repository
@@ -282,7 +279,7 @@ Or open `http://<ec2-public-ip>` in your browser to access the puzzle UI.
 # Connect via SSM (no SSH key needed)
 aws ssm start-session --target <instance-id> --region eu-north-1
 
-# Inside the session — check cloud-init log
+# Inside the session - check cloud-init log
 sudo cat /var/log/cloud-init-output.log | tail -50
 
 # Verify all containers are running
@@ -334,11 +331,11 @@ cd terraform
 terraform destroy
 ```
 
-To also remove the bootstrap resources (state bucket, lock table, OIDC provider, deploy role):
+To also remove the bootstrap resources (state bucket, OIDC provider, deploy role):
 
 ```bash
 cd bootstrap
 terraform destroy
 ```
 
-> **Warning** — Destroying the bootstrap S3 bucket will delete all Terraform state. Do this only when you are fully decommissioning the project.
+> **Warning** - Destroying the bootstrap S3 bucket will delete all Terraform state. Do this only when you are fully decommissioning the project.
