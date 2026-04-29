@@ -29,6 +29,8 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.11"
 
       - name: Terraform init
         working-directory: terraform
