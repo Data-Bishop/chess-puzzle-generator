@@ -12,6 +12,7 @@ A cloud-native platform that ingests Chess.com game archives, runs batch Stockfi
 
 - [What This Project Demonstrates](#what-this-project-demonstrates)
 - [Architecture](#architecture)
+- [How It Works](#how-it-works)
 - [Tech Stack](#tech-stack)
 - [UI](#ui)
   - [Job Submission](#job-submission)
@@ -44,62 +45,18 @@ A cloud-native platform that ingests Chess.com game archives, runs batch Stockfi
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    USER(["Player"])
+![Architecture](docs/assets/architecture.png)
 
-    subgraph CICD["CI / CD - GitHub Actions"]
-        direction TB
-        CI["CI\ntests · lint · validate"]
-        CD["CD\ndeploy on CI pass"]
-        CI -->|on pass| CD
-    end
+---
 
-    subgraph INFRA["Infrastructure"]
-        direction TB
-        SSM["SSM Parameter Store"]
-        ECR["ECR\npuzzle image"]
-        TFS3["S3\nterraform state"]
-        DYN["DynamoDB\nstate lock"]
-    end
+## How It Works
 
-    subgraph EC2["EC2  t3.small · Amazon Linux 2023"]
-        direction TB
-        NGX["Nginx :80"]
-        API["FastAPI :8000"]
-        DB[("PostgreSQL")]
-        RDS[("Redis")]
-        NGX --> API
-        API --- DB
-        API --- RDS
-    end
-
-    subgraph LAM["AWS Lambda"]
-        direction TB
-        ETL["ETL Lambda\npython3.12 zip"]
-        PUZ["Puzzle Generator\ncontainer + Stockfish"]
-    end
-
-    CHESS(["Chess.com API"])
-    S3G[/"S3\ngames.json"/]
-
-    USER  -- "① submit username" --> NGX
-    API   -- "⑥ serve puzzles"  --> USER
-
-    API   -- "② invoke"         --> ETL
-    ETL   -- "③ fetch games"    --> CHESS
-    ETL   -- "④ store"          --> S3G
-    ETL   -- "④ invoke"         --> PUZ
-    S3G   -- "⑤ read games"     --> PUZ
-    PUZ   -- "⑤ callback"       --> API
-
-    CD    -. "push image"        .-> ECR
-    CD    -. "terraform apply"   .-> TFS3
-    CD    -. "terraform apply"   .-> DYN
-
-    ECR   -. "pull image"        .-> PUZ
-    SSM   -. "inject secrets"    .-> NGX
-```
+1. **Player submits a Chess.com username** via the web UI. Nginx proxies the request to FastAPI, which creates a job record in PostgreSQL and returns a job ID immediately.
+2. **FastAPI invokes the ETL Lambda** asynchronously via boto3. The job status updates to `processing`.
+3. **ETL Lambda fetches game archives** from the Chess.com public API, filters them by the requested date range, time control, and rating, then stores the raw game data as `games.json` in S3.
+4. **ETL Lambda invokes the Puzzle Generator Lambda**, passing the S3 object key. The job status updates to `generating_puzzles`.
+5. **Puzzle Generator reads the games from S3**, parses each PGN with python-chess, and feeds every position to Stockfish. Positions where Stockfish finds a significant evaluation swing are extracted as tactical puzzles, each tagged with a theme (fork, pin, skewer, etc.) and a difficulty rating.
+6. **Puzzle Generator callbacks to FastAPI** with the generated puzzles. FastAPI bulk-inserts them into PostgreSQL, sets the job status to `completed`, and the UI automatically loads the puzzle solver.
 
 ---
 
