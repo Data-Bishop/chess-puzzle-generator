@@ -37,8 +37,8 @@ jobs:
             -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
             -backend-config="key=chess-puzzle-generator/terraform.tfstate" \
             -backend-config="region=${{ vars.AWS_REGION }}" \
-            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
-            -backend-config="encrypt=true"
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
 
       # Create the ECR repository first so the Docker push step has somewhere to push to.
       # On subsequent deploys this is a no-op.

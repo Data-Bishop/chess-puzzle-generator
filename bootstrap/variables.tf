@@ -10,11 +10,6 @@ variable "project_name" {
   default     = "chess-puzzle-generator"
 }
 
-variable "lock_table_name" {
-  description = "Name of the DynamoDB table used for state locking"
-  type        = string
-  default     = "chess-puzzle-generator-terraform-locks"
-}
 
 variable "github_repo" {
   description = "GitHub repository in owner/repo format (e.g. Data-Bishop/chess-puzzle-generator)"

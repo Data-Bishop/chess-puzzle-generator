@@ -9,7 +9,7 @@ terraform {
       version = "~> 2.0"
     }
   }
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
 
   # Backend is configured at init time via backend.hcl (locally) or
   # -backend-config flags (CI). See bootstrap/ for setup instructions.

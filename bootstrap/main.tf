@@ -54,23 +54,6 @@ resource "aws_s3_bucket_public_access_block" "terraform_state" {
   restrict_public_buckets = true
 }
 
-# DynamoDB table for state locking
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = var.lock_table_name
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = {
-    Project = var.project_name
-    Purpose = "terraform-state-lock"
-  }
-}
-
 # GitHub Actions OIDC
 #
 # Only one OIDC provider per URL is allowed per AWS account. If you already
@@ -173,12 +156,6 @@ resource "aws_iam_role_policy" "github_deploy" {
         ]
       },
       {
-        Sid      = "TerraformStateLock"
-        Effect   = "Allow"
-        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
-        Resource = aws_dynamodb_table.terraform_locks.arn
-      },
-      {
         Sid      = "EC2"
         Effect   = "Allow"
         Action   = ["ec2:*"]
@@ -245,32 +222,12 @@ resource "aws_iam_role_policy" "github_deploy" {
         ]
         Resource = "*"
       },
-      {
-        Sid    = "DynamoDB"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:CreateTable",
-          "dynamodb:DeleteTable",
-          "dynamodb:DescribeTable",
-          "dynamodb:UpdateTable",
-          "dynamodb:TagResource",
-          "dynamodb:UntagResource",
-          "dynamodb:ListTagsOfResource",
-          "dynamodb:DescribeTimeToLive",
-          "dynamodb:DescribeContinuousBackups",
-        ]
-        Resource = "*"
-      },
     ]
   })
 }
 
 output "state_bucket_name" {
   value = aws_s3_bucket.terraform_state.bucket
-}
-
-output "lock_table_name" {
-  value = aws_dynamodb_table.terraform_locks.name
 }
 
 output "deploy_role_arn" {
@@ -281,10 +238,10 @@ output "deploy_role_arn" {
 output "backend_hcl" {
   description = "Contents for terraform/backend.hcl (gitignored)"
   value       = <<-EOT
-    bucket         = "${aws_s3_bucket.terraform_state.bucket}"
-    key            = "chess-puzzle-generator/terraform.tfstate"
-    region         = "${var.aws_region}"
-    dynamodb_table = "${aws_dynamodb_table.terraform_locks.name}"
-    encrypt        = true
+    bucket       = "${aws_s3_bucket.terraform_state.bucket}"
+    key          = "chess-puzzle-generator/terraform.tfstate"
+    region       = "${var.aws_region}"
+    encrypt      = true
+    use_lockfile = true
   EOT
 }
