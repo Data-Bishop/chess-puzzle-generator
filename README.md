@@ -6,10 +6,13 @@ A cloud-native platform that ingests Chess.com game archives, runs batch Stockfi
 [![Deploy](https://github.com/Data-Bishop/chess-puzzle-generator/actions/workflows/deploy.yml/badge.svg)](https://github.com/Data-Bishop/chess-puzzle-generator/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+![Demo](docs/assets/demo.gif)
+
 ---
 
 ## Table of Contents
 
+- [Demo](#demo)
 - [What This Project Demonstrates](#what-this-project-demonstrates)
 - [Architecture](#architecture)
 - [How It Works](#how-it-works)
