@@ -44,6 +44,11 @@ jobs:
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"
 
+      - name: Recreate ETL build directory (needed for archive_file data source)
+        run: |
+          mkdir -p terraform/builds/etl
+          cp lambda/etl/handler.py terraform/builds/etl/
+
       - name: Terraform destroy
         working-directory: terraform
         run: terraform destroy -auto-approve
